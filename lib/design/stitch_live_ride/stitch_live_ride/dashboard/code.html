@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed-variant": "#005964",
+              "surface-container-highest": "#262626",
+              "on-error": "#490006",
+              "primary-dim": "#ff734c",
+              "on-primary-fixed": "#000000",
+              "outline": "#757575",
+              "outline-variant": "#484848",
+              "surface-container": "#191919",
+              "tertiary-fixed-dim": "#2be800",
+              "primary-fixed": "#ff7852",
+              "on-tertiary-container": "#0b5800",
+              "surface": "#0e0e0e",
+              "surface-bright": "#2c2c2c",
+              "tertiary": "#8eff71",
+              "on-surface-variant": "#ababab",
+              "error-dim": "#d7383b",
+              "error-container": "#9f0519",
+              "surface-variant": "#262626",
+              "on-error-container": "#ffa8a3",
+              "on-primary": "#5c1300",
+              "inverse-surface": "#f9f9f9",
+              "on-secondary": "#004d57",
+              "secondary-container": "#006875",
+              "surface-container-lowest": "#000000",
+              "on-secondary-fixed": "#003a42",
+              "primary-container": "#ff7852",
+              "background": "#0e0e0e",
+              "surface-dim": "#0e0e0e",
+              "tertiary-container": "#2ff801",
+              "inverse-on-surface": "#555555",
+              "surface-container-low": "#131313",
+              "on-primary-fixed-variant": "#581200",
+              "on-background": "#ffffff",
+              "primary-fixed-dim": "#ff5d2e",
+              "secondary-fixed-dim": "#00d7f0",
+              "on-primary-container": "#480d00",
+              "inverse-primary": "#b22e00",
+              "secondary": "#00e3fd",
+              "secondary-fixed": "#26e6ff",
+              "on-secondary-container": "#e8fbff",
+              "on-tertiary-fixed": "#064200",
+              "secondary-dim": "#00d4ec",
+              "error": "#ff716c",
+              "tertiary-dim": "#2be800",
+              "surface-container-high": "#1f1f1f",
+              "primary": "#ff8f70",
+              "surface-tint": "#ff8f70",
+              "on-tertiary": "#0d6100",
+              "on-surface": "#ffffff",
+              "tertiary-fixed": "#2ff801",
+              "on-tertiary-fixed-variant": "#0d6200"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .glass-card {
+        background: rgba(44, 44, 44, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .kinetic-gradient {
+        background: linear-gradient(135deg, #ff8f70 0%, #ff7852 100%);
+      }
+      .neon-shadow {
+        box-shadow: 0 0 40px rgba(255, 143, 112, 0.2);
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50 bg-black/40 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-dim">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up of a professional cyclist wearing a sleek carbon fiber helmet and performance sunglasses, outdoor daylight." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCP3h6Y_mfzO-obyRswZrWSGH9eCE6ronPlG5acu9hY7meeNst2XTdJwIdBEFtvaHYProiZENz2BWLzQvaB3qDY1cDGFiU4rdYAhmTo6vefLRVkpimXJIHPL5BQpriEAFS2gnL-GGzdga_3AuZnRsic-zrItfajFoCf4BFLpLx40sYLtW2_lWhqsmXE7F-bQANdLcft5HF_17YmeRxVvjtFwuTl0UY5uMutthbRs1xwX0LH0HoszImMPuoGo2r2IxGnEgArZ8jwDGs"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label text-[10px] uppercase tracking-[0.1em] text-on-surface-variant font-bold">Morning, Rider</span>
+<span class="text-xl font-black italic tracking-tighter text-white font-headline">VELOCITY</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-white" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Daily Activity Summary Section -->
+<section class="relative">
+<div class="surface-container-low rounded-xl p-8 overflow-hidden relative border border-outline-variant/10 shadow-2xl">
+<!-- Background Glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px]"></div>
+<div class="flex flex-col md:flex-row items-center gap-10">
+<!-- Progress Ring -->
+<div class="relative w-48 h-48 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle class="text-surface-container-highest" cx="96" cy="96" fill="transparent" r="84" stroke="currentColor" stroke-width="12"></circle>
+<circle class="drop-shadow-[0_0_8px_rgba(255,143,112,0.5)]" cx="96" cy="96" fill="transparent" r="84" stroke="url(#gradient)" stroke-dasharray="527" stroke-dashoffset="130" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#ff8f70"></stop>
+<stop offset="100%" stop-color="#ff734c"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-headline text-4xl font-extrabold tracking-tighter text-primary">75<span class="text-lg">%</span></span>
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Daily Goal</span>
+</div>
+</div>
+<!-- Key Stats -->
+<div class="flex-1 grid grid-cols-2 gap-6 w-full">
+<div class="space-y-1">
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Distance</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-3xl font-bold tracking-tight">42.8</span>
+<span class="font-label text-xs font-semibold text-on-surface-variant">KM</span>
+</div>
+</div>
+<div class="space-y-1">
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Time</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-3xl font-bold tracking-tight">1:45</span>
+<span class="font-label text-xs font-semibold text-on-surface-variant">HRS</span>
+</div>
+</div>
+<div class="space-y-1">
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Calories</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-3xl font-bold tracking-tight">1,240</span>
+<span class="font-label text-xs font-semibold text-on-surface-variant">KCAL</span>
+</div>
+</div>
+<div class="space-y-1">
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Elevation</span>
+<div class="flex items-baseline gap-1">
+<span class="font-headline text-3xl font-bold tracking-tight text-secondary">850</span>
+<span class="font-label text-xs font-semibold text-on-surface-variant">M</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Primary CTA -->
+<section class="flex flex-col items-center">
+<button class="kinetic-gradient w-full max-w-sm py-6 rounded-xl flex items-center justify-center gap-4 active:scale-95 transition-all neon-shadow group">
+<span class="material-symbols-outlined text-on-primary-fixed text-3xl font-bold" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+<span class="font-headline text-xl font-black italic tracking-tighter text-on-primary-fixed">START RIDE</span>
+</button>
+</section>
+<!-- Recent Rides Preview -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<h2 class="font-headline text-xl font-extrabold tracking-tight">Recent Rides</h2>
+<button class="font-label text-xs font-bold text-primary tracking-wide uppercase">View All</button>
+</div>
+<div class="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-6 px-6">
+<!-- Ride Card 1 -->
+<div class="min-w-[280px] surface-container rounded-lg overflow-hidden border border-outline-variant/10 group">
+<div class="h-32 bg-surface-bright relative">
+<img alt="Route Map" class="w-full h-full object-cover opacity-60" data-alt="Digital minimalist map showing a winding cycling route through hilly coastal terrain with neon blue path highlights." data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqgJozrUjoNFIYKp4WbVTfWbF7igDHeyYfreiG3fmNvrK66jJsxdFl80Z2_UxAcAMJWQP28CEA-lyJ6SpPNhBvtlAnX6QM6YIg9lk5e9tZeGtLBmX7i9j8aATx3uVoRZmb4YkGoWFRha6yHOOCkkqupp6n3oBj9VoBHU_F-LTbXvjWERZd4VspvVlQSaxpXwqpF0Lf0tyNbtAs6WMOSWreV_3mzsvgBnkRcpBe3ixql9RPTjyQIcqW9e8NqlMv4fd9hJYnkm_7vt4"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex gap-2">
+<span class="px-2 py-1 rounded bg-secondary-container/80 backdrop-blur-md text-[10px] font-bold text-on-secondary-container uppercase tracking-wider">Coastal Loop</span>
+</div>
+</div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-on-surface-variant uppercase font-medium">Tuesday Morning</span>
+<span class="font-headline font-bold text-lg">34.2 km</span>
+</div>
+<span class="material-symbols-outlined text-tertiary" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+</div>
+<!-- Ride Card 2 -->
+<div class="min-w-[280px] surface-container rounded-lg overflow-hidden border border-outline-variant/10 group">
+<div class="h-32 bg-surface-bright relative">
+<img alt="Route Map" class="w-full h-full object-cover opacity-60" data-alt="Vector map visualization of urban city streets in Paris with a highlighted cycling path in vibrant orange." data-location="Paris" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7lQXNdvKDVFXEwiGOgNVxDfKHjBrQ8b7vbo_Yr61x9ASTHUnnVvDmFYx0Yw3stl4Sekj7nhqg8iEbCHlcZ3rV9Wgd8eJrJM5urEg2HQTvmNarSV6ziK51rZWquvyXOa2IPkB2M-rC6GFguEo8d1MckMN7XqCXfkYzSo1d2i8oQQXlr5qyjvoIJJLgHz91LFhDpm-vWQw-TO1dEuvAFs0KBq9fT5B2VoNlmpgwG5yZEwaLfn_lA68LTaw09sfNcni11v-cHdHTnOU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex gap-2">
+<span class="px-2 py-1 rounded bg-primary-container/80 backdrop-blur-md text-[10px] font-bold text-on-primary-container uppercase tracking-wider">City Sprint</span>
+</div>
+</div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-on-surface-variant uppercase font-medium">Yesterday</span>
+<span class="font-headline font-bold text-lg">12.5 km</span>
+</div>
+<span class="material-symbols-outlined text-primary" data-icon="bolt" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+</div>
+</div>
+<!-- Ride Card 3 -->
+<div class="min-w-[280px] surface-container rounded-lg overflow-hidden border border-outline-variant/10 group">
+<div class="h-32 bg-surface-bright relative">
+<img alt="Route Map" class="w-full h-full object-cover opacity-60" data-alt="Topographic map visualization of high mountain passes with sharp elevation contour lines and a neon green trail." data-location="Alps" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABpa4N50aJLsiX8PK09mn7oZW_QxKT5ZLpgqISjjbnIJHz5tZVHWL3SpikGhgc2ro04pUycq0qWBzxvLL7Ce3CpntF7iOxTuj7CQ3qDQafO4x-e2MlrWESLKIOvCsm3T7kqApBiZMdUV1Vl0RQ_SzTwuVCwtczA_gI_TryjgFYeK_J5d3D3XHF3pac3N9ppymLmYU1Gk7O1taTyupPwPXCpgAWLwp7Z6yVA0t6jqE9AYz53bhu0FcT8hzkQq8Nf3ATAelO68DSnfc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute bottom-3 left-3 flex gap-2">
+<span class="px-2 py-1 rounded bg-tertiary-container/20 border border-tertiary/30 backdrop-blur-md text-[10px] font-bold text-tertiary uppercase tracking-wider">Alpine Climb</span>
+</div>
+</div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-label text-[10px] text-on-surface-variant uppercase font-medium">Sunday Epic</span>
+<span class="font-headline font-bold text-lg">78.0 km</span>
+</div>
+<span class="material-symbols-outlined text-secondary" data-icon="mountains" style="font-variation-settings: 'FILL' 1;">mountain_flag</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Explore / Suggested Routes Section -->
+<section class="space-y-6">
+<h2 class="font-headline text-xl font-extrabold tracking-tight">Explore Routes</h2>
+<!-- Bento Grid Explore -->
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 glass-card rounded-xl p-6 relative overflow-hidden border border-white/5 h-48 flex items-end">
+<img alt="Scenic Route" class="absolute inset-0 w-full h-full object-cover opacity-40" data-alt="Wide panoramic shot of a winding asphalt road through a misty pine forest at sunrise with soft atmospheric lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPfneSeGvtz3lWOGWbt0SDifjRucEx1unn2mZa6XE-CppkWQXgEV7WcnrxOiJbi6-O4enTZzdiISM9e7aJnS33x6Ec16sMePW6FcCu6B2iOmwypaGyp9oGlLS4B96OqNtuXM57hxZFRilvj37A465xeDsDJ1YsLSOZjV54pHMSeHICpKumVJy9wCBnPtZ9VcULeosJOyO8HvloXSkFP0oxPazNt0ATQs9z5EP5HtvJmp8wTgUvuYKLCMmuOry59zkHkNjSfqe7EB8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent"></div>
+<div class="relative z-10 w-full flex justify-between items-end">
+<div class="space-y-1">
+<span class="bg-tertiary text-on-tertiary px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter">New Route</span>
+<h3 class="font-headline text-2xl font-black italic tracking-tighter leading-none">MISTY RIDGES</h3>
+<p class="font-label text-xs text-on-surface-variant">15.4 km • 420m gain</p>
+</div>
+<button class="w-12 h-12 rounded-full kinetic-gradient flex items-center justify-center shadow-lg active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-on-primary-fixed" data-icon="navigation">navigation</span>
+</button>
+</div>
+</div>
+<div class="surface-container rounded-xl p-5 border border-outline-variant/10 space-y-4">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="forest">forest</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-headline font-bold text-sm tracking-tight">GRAVEL PATHS</h4>
+<span class="font-label text-[10px] text-on-surface-variant uppercase font-semibold">Moderate • 12km</span>
+</div>
+</div>
+<div class="surface-container rounded-xl p-5 border border-outline-variant/10 space-y-4">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="speed">speed</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-headline font-bold text-sm tracking-tight">VELODROME</h4>
+<span class="font-label text-[10px] text-on-surface-variant uppercase font-semibold">Pro • 40km</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 w-full z-50 flex justify-around items-center px-6 py-3">
+<div class="bg-zinc-900/60 backdrop-blur-xl w-[92%] max-w-md rounded-[40px] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex justify-around items-center px-4 py-3">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center text-[#FF4500] scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Home</span>
+</a>
+<!-- Feed -->
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Feed</span>
+</a>
+<!-- Start (Center Action) -->
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-3xl mb-1 text-primary-fixed" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Start</span>
+</a>
+<!-- Awards -->
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="emoji_events">emoji_events</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Awards</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="account_circle">account_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Profile</span>
+</a>
+</div>
+</nav>
+<style>
+        /* Custom Utilities */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>
