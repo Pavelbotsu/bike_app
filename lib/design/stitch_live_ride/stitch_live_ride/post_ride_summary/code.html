@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Post-Ride Summary | VELOCITY</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;800&amp;family=Inter:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed-variant": "#005964",
+              "surface-container-highest": "#262626",
+              "on-error": "#490006",
+              "primary-dim": "#ff734c",
+              "on-primary-fixed": "#000000",
+              "outline": "#757575",
+              "outline-variant": "#484848",
+              "surface-container": "#191919",
+              "tertiary-fixed-dim": "#2be800",
+              "primary-fixed": "#ff7852",
+              "on-tertiary-container": "#0b5800",
+              "surface": "#0e0e0e",
+              "surface-bright": "#2c2c2c",
+              "tertiary": "#8eff71",
+              "on-surface-variant": "#ababab",
+              "error-dim": "#d7383b",
+              "error-container": "#9f0519",
+              "surface-variant": "#262626",
+              "on-error-container": "#ffa8a3",
+              "on-primary": "#5c1300",
+              "inverse-surface": "#f9f9f9",
+              "on-secondary": "#004d57",
+              "secondary-container": "#006875",
+              "surface-container-lowest": "#000000",
+              "on-secondary-fixed": "#003a42",
+              "primary-container": "#ff7852",
+              "background": "#0e0e0e",
+              "surface-dim": "#0e0e0e",
+              "tertiary-container": "#2ff801",
+              "inverse-on-surface": "#555555",
+              "surface-container-low": "#131313",
+              "on-primary-fixed-variant": "#581200",
+              "on-background": "#ffffff",
+              "primary-fixed-dim": "#ff5d2e",
+              "secondary-fixed-dim": "#00d7f0",
+              "on-primary-container": "#480d00",
+              "inverse-primary": "#b22e00",
+              "secondary": "#00e3fd",
+              "secondary-fixed": "#26e6ff",
+              "on-secondary-container": "#e8fbff",
+              "on-tertiary-fixed": "#064200",
+              "secondary-dim": "#00d4ec",
+              "error": "#ff716c",
+              "tertiary-dim": "#2be800",
+              "surface-container-high": "#1f1f1f",
+              "primary": "#ff8f70",
+              "surface-tint": "#ff8f70",
+              "on-tertiary": "#0d6100",
+              "on-surface": "#ffffff",
+              "tertiary-fixed": "#2ff801",
+              "on-tertiary-fixed-variant": "#0d6200"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .glass-card {
+        background: rgba(44, 44, 44, 0.4);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+      }
+      .kinetic-gradient {
+        background: linear-gradient(135deg, #ff8f70 0%, #ff7852 100%);
+      }
+      .glow-secondary {
+        filter: drop-shadow(0 0 8px rgba(0, 227, 253, 0.4));
+      }
+      .glow-tertiary {
+        filter: drop-shadow(0 0 8px rgba(142, 255, 113, 0.4));
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50 bg-black/40 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="User profile photo of a cyclist in a high-tech aero helmet with mirrored visor looking focused" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXCYAb5deWVCFzH1sGT3u6EYHoMKxvRNCkCYiJc_SmLGVMJKHtTD-EfjaAXi6NVCHEK_oSzFL2q4yEdoWphYpuxC0UH3fts3IQHe_PJylu9qIF7OQb3nhemEpQyNiIG60ITJam15WK0qnE70bmbFxHdWz3xlnW2S6ShYWOQ-SchtiX5ZclxWty-ZY7K0nDGbf8VCGYQXyCTNBOqJntuwuu3jNZN9dGPJT5bjNTvphNYQXMgQF44Jruun-Wc6OyLny3fzQG45ZQmWA"/>
+</div>
+<span class="text-xl font-black italic tracking-tighter text-white font-headline">VELOCITY</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-white hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto space-y-10">
+<!-- Hero Header -->
+<section class="space-y-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant">RIDE COMPLETE</span>
+</div>
+<h1 class="text-[3.5rem] font-black leading-none tracking-tight font-headline text-primary-fixed">
+                64.2 <span class="text-2xl font-label text-on-surface-variant align-middle">KM</span>
+</h1>
+<p class="font-headline text-xl font-bold tracking-tight text-on-surface-variant">Morning Peak Challenge • 2h 14m</p>
+</section>
+<!-- Interactive Map Recap -->
+<section class="relative group">
+<div class="rounded-xl overflow-hidden aspect-[16/10] bg-surface-container shadow-2xl relative">
+<img class="w-full h-full object-cover opacity-60" data-alt="Detailed topographic map with a vibrant neon orange GPS route line winding through coastal hills and city streets" data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnXo5HW8ARuDD3RLR6sxAbqig0Lgix6n_N6KqG7o7tVe0fsnp0-x83COwFTuqeqeAYfTpbArAKFHddxN7NzjWJut7xqa1by_nutM1spS41goH-mJxxyvC28f38pL5RkNcgygGL9lZDtASi8gfa8NfqplTqt5nuU4nyNKLnyuej4xePBwdoMr7luTlW7YZJjoIv66k83G0eLnxIfLA86js2ABCS3CMTg5A5z-xmJB9ajx3e2a58UC8naccreDbtEQ70cLOqZZm4jvw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6 flex justify-between items-end">
+<div>
+<p class="font-label text-[10px] font-bold tracking-widest uppercase text-secondary">ROUTE SNAPSHOT</p>
+<h2 class="font-headline text-xl font-extrabold italic">Pacific Coast Loop</h2>
+</div>
+<button class="p-3 rounded-full kinetic-gradient shadow-lg">
+<span class="material-symbols-outlined text-black font-bold">share</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Performance Bento Grid -->
+<section class="space-y-6">
+<h3 class="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant px-1">Performance Analysis</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Speed Card -->
+<div class="glass-card p-6 rounded-xl border border-outline-variant/15 flex flex-col justify-between h-48">
+<div>
+<p class="font-label text-[10px] font-bold tracking-widest uppercase text-secondary">AVG SPEED</p>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black font-headline text-on-surface">28.4</span>
+<span class="text-xs font-label text-on-surface-variant">KM/H</span>
+</div>
+</div>
+<div class="h-16 w-full flex items-end gap-1">
+<!-- Mockup Graph bars -->
+<div class="flex-1 bg-secondary/20 rounded-t-sm h-[40%]"></div>
+<div class="flex-1 bg-secondary/30 rounded-t-sm h-[60%]"></div>
+<div class="flex-1 bg-secondary/50 rounded-t-sm h-[90%]"></div>
+<div class="flex-1 bg-secondary rounded-t-sm h-[75%] glow-secondary"></div>
+<div class="flex-1 bg-secondary/60 rounded-t-sm h-[50%]"></div>
+<div class="flex-1 bg-secondary/40 rounded-t-sm h-[80%]"></div>
+<div class="flex-1 bg-secondary/20 rounded-t-sm h-[30%]"></div>
+</div>
+</div>
+<!-- Elevation Card -->
+<div class="glass-card p-6 rounded-xl border border-outline-variant/15 flex flex-col justify-between h-48">
+<div>
+<p class="font-label text-[10px] font-bold tracking-widest uppercase text-tertiary">ELEVATION GAIN</p>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black font-headline text-on-surface">842</span>
+<span class="text-xs font-label text-on-surface-variant">M</span>
+</div>
+</div>
+<div class="h-16 w-full flex items-end relative">
+<!-- Svg path for smooth elevation curve -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 40">
+<path d="M0 40 Q 25 30, 40 10 T 70 20 T 100 5 L 100 40 L 0 40 Z" fill="rgba(142, 255, 113, 0.1)"></path>
+<path class="glow-tertiary" d="M0 40 Q 25 30, 40 10 T 70 20 T 100 5" fill="none" stroke="#8eff71" stroke-width="2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Heart Rate Micro-HUD -->
+<div class="surface-container p-6 rounded-xl flex items-center justify-between border border-outline-variant/15">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<div>
+<p class="font-label text-[10px] font-bold tracking-widest uppercase text-on-surface-variant">PEAK INTENSITY</p>
+<h4 class="font-headline text-2xl font-black">174 <span class="text-xs text-on-surface-variant">BPM</span></h4>
+</div>
+</div>
+<div class="text-right">
+<span class="inline-flex items-center px-3 py-1 rounded-full bg-surface-container-highest border border-primary/20 text-primary-fixed text-[10px] font-bold tracking-tighter uppercase">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed mr-2 animate-pulse"></span>
+                        Zone 4 (Threshold)
+                    </span>
+</div>
+</div>
+</section>
+<!-- Achievements Section -->
+<section class="space-y-6">
+<h3 class="font-label text-xs font-bold tracking-widest uppercase text-on-surface-variant px-1">New Achievements</h3>
+<div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+<!-- Achievement Card 1 -->
+<div class="min-w-[160px] glass-card p-6 rounded-xl border border-outline-variant/15 text-center space-y-3">
+<div class="w-16 h-16 mx-auto kinetic-gradient rounded-full flex items-center justify-center shadow-xl">
+<span class="material-symbols-outlined text-black text-3xl">military_tech</span>
+</div>
+<p class="font-label text-[10px] font-bold text-primary tracking-widest uppercase">PR EARNED</p>
+<h5 class="font-headline text-sm font-extrabold leading-tight">Fastest 40km</h5>
+</div>
+<!-- Achievement Card 2 -->
+<div class="min-w-[160px] glass-card p-6 rounded-xl border border-outline-variant/15 text-center space-y-3">
+<div class="w-16 h-16 mx-auto bg-tertiary-container rounded-full flex items-center justify-center shadow-xl">
+<span class="material-symbols-outlined text-on-tertiary-container text-3xl">terrain</span>
+</div>
+<p class="font-label text-[10px] font-bold text-tertiary tracking-widest uppercase">STREAK</p>
+<h5 class="font-headline text-sm font-extrabold leading-tight">Climb King</h5>
+</div>
+<!-- Achievement Card 3 -->
+<div class="min-w-[160px] glass-card p-6 rounded-xl border border-outline-variant/15 text-center space-y-3">
+<div class="w-16 h-16 mx-auto bg-secondary-container rounded-full flex items-center justify-center shadow-xl">
+<span class="material-symbols-outlined text-on-secondary-container text-3xl">bolt</span>
+</div>
+<p class="font-label text-[10px] font-bold text-secondary tracking-widest uppercase">POWER UP</p>
+<h5 class="font-headline text-sm font-extrabold leading-tight">300W Average</h5>
+</div>
+</div>
+</section>
+<!-- Main CTA -->
+<section class="pt-6">
+<button class="w-full kinetic-gradient h-16 rounded-xl flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-transform active:scale-95">
+<span class="text-black font-black font-headline tracking-tighter text-lg italic">SAVE &amp; SHARE RIDE</span>
+<span class="material-symbols-outlined text-black">send</span>
+</button>
+<button class="w-full mt-4 h-14 rounded-xl flex items-center justify-center border border-outline-variant/30 text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="font-label font-bold text-sm">Discard Ride</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 w-full z-50 flex justify-around items-center px-6 py-3">
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md rounded-[40px] border border-white/10 bg-zinc-900/60 backdrop-blur-xl flex justify-around items-center px-6 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+<button class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">dynamic_feed</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase mt-1">Feed</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#FF4500] scale-110 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase mt-1">Start</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase mt-1">Awards</span>
+</button>
+<button class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase mt-1">Profile</span>
+</button>
+</div>
+</nav>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

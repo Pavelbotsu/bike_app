@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Velocity | Feed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-secondary-fixed-variant": "#005964",
+              "surface-container-highest": "#262626",
+              "on-error": "#490006",
+              "primary-dim": "#ff734c",
+              "on-primary-fixed": "#000000",
+              "outline": "#757575",
+              "outline-variant": "#484848",
+              "surface-container": "#191919",
+              "tertiary-fixed-dim": "#2be800",
+              "primary-fixed": "#ff7852",
+              "on-tertiary-container": "#0b5800",
+              "surface": "#0e0e0e",
+              "surface-bright": "#2c2c2c",
+              "tertiary": "#8eff71",
+              "on-surface-variant": "#ababab",
+              "error-dim": "#d7383b",
+              "error-container": "#9f0519",
+              "surface-variant": "#262626",
+              "on-error-container": "#ffa8a3",
+              "on-primary": "#5c1300",
+              "inverse-surface": "#f9f9f9",
+              "on-secondary": "#004d57",
+              "secondary-container": "#006875",
+              "surface-container-lowest": "#000000",
+              "on-secondary-fixed": "#003a42",
+              "primary-container": "#ff7852",
+              "background": "#0e0e0e",
+              "surface-dim": "#0e0e0e",
+              "tertiary-container": "#2ff801",
+              "inverse-on-surface": "#555555",
+              "surface-container-low": "#131313",
+              "on-primary-fixed-variant": "#581200",
+              "on-background": "#ffffff",
+              "primary-fixed-dim": "#ff5d2e",
+              "secondary-fixed-dim": "#00d7f0",
+              "on-primary-container": "#480d00",
+              "inverse-primary": "#b22e00",
+              "secondary": "#00e3fd",
+              "secondary-fixed": "#26e6ff",
+              "on-secondary-container": "#e8fbff",
+              "on-tertiary-fixed": "#064200",
+              "secondary-dim": "#00d4ec",
+              "error": "#ff716c",
+              "tertiary-dim": "#2be800",
+              "surface-container-high": "#1f1f1f",
+              "primary": "#ff8f70",
+              "surface-tint": "#ff8f70",
+              "on-tertiary": "#0d6100",
+              "on-surface": "#ffffff",
+              "tertiary-fixed": "#2ff801",
+              "on-tertiary-fixed-variant": "#0d6200"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Manrope"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(25, 25, 25, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .text-glow {
+            text-shadow: 0 0 15px rgba(255, 143, 112, 0.4);
+        }
+        .kinetic-gradient {
+            background: linear-gradient(135deg, #ff8f70 0%, #ff7852 100%);
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary-fixed">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50 bg-black/40 backdrop-blur-md">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a female cyclist wearing a sleek professional carbon fiber helmet and orange tinted racing goggles" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqjsXn29NvrSuBV9SwKesKrrtnFsbqRZ1aXU9v-3ok8ABiecj0vt5y0z5FgpxFGNkVYKbPjITkWGTRZYJ_wh-vDiGkcgBeBgYbsmxEOqcx7Lo4zmvCMFIuKYy0XTZ8KbqvYj9eiYqO0hF6XWFOKkcx8uXGpGjvdqImsS0_eZcyThUu9Hr-T7hbT0ez0M4BDuJA44ZGFVIuJdKpG55Hsy7Q8I2NP3fjJlrHYWXH0eHnkgMHPZrb2LJ7V6dZTk1I0kNudZda-ptsc3Y"/>
+</div>
+<h1 class="text-xl font-black italic tracking-tighter text-white">VELOCITY</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:opacity-80 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[#FF4500]" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 max-w-2xl mx-auto space-y-8">
+<!-- Top Performers Carousel -->
+<section class="space-y-4">
+<div class="flex justify-between items-end px-2">
+<h2 class="font-headline text-lg font-extrabold tracking-tight uppercase">Top Performers</h2>
+<span class="font-label text-[10px] text-on-surface-variant tracking-widest uppercase">Weekly Leaders</span>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 px-2 snap-x">
+<!-- Leader 1 -->
+<div class="flex-shrink-0 w-32 snap-center text-center space-y-2">
+<div class="relative inline-block">
+<div class="w-20 h-20 mx-auto rounded-full p-1 bg-gradient-to-tr from-primary via-secondary to-tertiary">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="Leader" class="w-full h-full object-cover" data-alt="Professional male cyclist with sun-kissed skin and athletic build against a blurred mountain backdrop" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEI2boelwD-Gh1S0o7h3og2VhmnM8hsfWU6MsgcnGU-aLj13DMBJ6KPtE6IE4dIVo8I3tzUMhZr4cvBG7Va2H_bXeytjhRPvXJKarUhhfGx-twimbIEXAXcAOmJR0Bs5RnLjoTra9gZeSHHe4GBNZyALUUJmZqYCkttX7rKnvpnM0JzaR8PHvF4EJsdy-hSDSOoesbDvK7WdcAh1lL9k-eKEKhQpA0YlPk7aNUJWHnuibbGBx1OTtKSnC78V0K6CpMDOX1ITPpRzY"/>
+</div>
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 kinetic-gradient text-on-primary-fixed text-[10px] font-black px-2 py-0.5 rounded-full">1st</div>
+</div>
+<div class="space-y-0.5">
+<p class="text-xs font-bold truncate">Marcus V.</p>
+<p class="font-label text-[9px] text-secondary font-bold">428.5 KM</p>
+</div>
+</div>
+<!-- Leader 2 -->
+<div class="flex-shrink-0 w-32 snap-center text-center space-y-2 opacity-80">
+<div class="relative inline-block">
+<div class="w-20 h-20 mx-auto rounded-full p-1 bg-outline-variant">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="Leader" class="w-full h-full object-cover" data-alt="Young athletic woman cyclist with tied back hair smiling in soft outdoor evening light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKTGtTNFMet2qts_mlcNDzUTPT6a4yrt6J8PdRqzvI-eDrRGesWNG2f9nMlD-mQtmz-w7RMeddqUZ75o9xXgcX52RI3_k5Yvuxcaj2tEmr7Ofk1UDrXF2HvZZF309F6U7QGaMwUNdWa6P39BudPDGTAE-lklk41JOsiJi8Ehn5fWkGEug5IVraetAwlGm4jhK5sIecWwYhwFEjfvSeJzQ_B_OMHvNoeIKvHrUP8rUyFstHxr44E30aCgZcweUlMGdhp3l8AkEd2cI"/>
+</div>
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-surface-container-highest text-white text-[10px] font-black px-2 py-0.5 rounded-full">2nd</div>
+</div>
+<div class="space-y-0.5">
+<p class="text-xs font-bold truncate">Elena R.</p>
+<p class="font-label text-[9px] text-on-surface-variant font-bold">392.1 KM</p>
+</div>
+</div>
+<!-- Leader 3 -->
+<div class="flex-shrink-0 w-32 snap-center text-center space-y-2 opacity-60">
+<div class="relative inline-block">
+<div class="w-20 h-20 mx-auto rounded-full p-1 bg-outline-variant">
+<div class="w-full h-full rounded-full border-4 border-background overflow-hidden">
+<img alt="Leader" class="w-full h-full object-cover" data-alt="Middle-aged male athlete with intense focus, wearing technical cycling gear and sunglasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAprESHp_XWP4oOhofN2SK5kbYBYTZwK-0nFqb_KRKfcTr3KEnjZsdIvTcOkmo9MAGbA_mGINm2CHnlmu52aF-jIWvNQQ1klblEktjVmGFTliFGl5nsuZj9wH5Dx88aHpDdKbf9FN6fL32Xm3xckjexliZXdfcTlv6Ytv4NXSs60UDyn_3M9aM7v7ihR1bA6nqeKZke9ZVdeyKJUtgf0Mo8XSV_Jyuhc1Fri0w-4cF674P-BQl-AZgFTmulo5GGsI94STpIi0K1ZXQ"/>
+</div>
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-surface-container-highest text-white text-[10px] font-black px-2 py-0.5 rounded-full">3rd</div>
+</div>
+<div class="space-y-0.5">
+<p class="text-xs font-bold truncate">David S.</p>
+<p class="font-label text-[9px] text-on-surface-variant font-bold">385.0 KM</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Feed List -->
+<section class="space-y-6">
+<!-- Activity Card 1 -->
+<article class="glass-card rounded-xl overflow-hidden border border-white/5 shadow-2xl">
+<!-- User Header -->
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img alt="Friend" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="Close-up of a smiling black woman in high-visibility cycling jersey with a bright background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2AIM1OjMwUZUjtKxNquW79Qgxr4DCEoMjEH2BJsIvdA6nqrhi_mokU5hmEaPT77zfVmTa1sgKCKh6FdovOlra00L8xkw4EsDIe9R_Dg7gB0s_4dNi6gJ6qCH5uT6o8xjvnTY-FOf9nV0K1yWve1HL32MDgeZZJB2F-Rs109j_tDtlimVDnFW9UOgFNqCDcJPD3jh8ZNQKF_dM9Cj1S-TFbNfBsBc5c7IWLrHaQfP95IbFPVV9ffTiDhO-w7SQT8UjRczpBi8XF78"/>
+<div>
+<h3 class="text-sm font-bold">Sarah Jenkins</h3>
+<p class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">2 hours ago</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+</button>
+</div>
+<!-- Content Body -->
+<div class="px-4 pb-2">
+<h4 class="text-lg font-black italic tracking-tight text-white mb-4 uppercase">Morning Canyon Sprint</h4>
+<!-- Stats Grid -->
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Distance</p>
+<p class="text-xl font-black text-primary italic">42.8 <span class="text-[10px] font-label not-italic">KM</span></p>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Time</p>
+<p class="text-xl font-black text-white italic">1:24 <span class="text-[10px] font-label not-italic">HR</span></p>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Elevation</p>
+<p class="text-xl font-black text-secondary italic">840 <span class="text-[10px] font-label not-italic">M</span></p>
+</div>
+</div>
+</div>
+<!-- Mini Map -->
+<div class="w-full h-48 bg-surface-container-highest relative overflow-hidden">
+<img alt="Map" class="w-full h-full object-cover opacity-50 contrast-125" data-alt="Abstract topographic map graphic with a neon secondary blue polyline showing a cycling route through mountainous terrain" data-location="San Francisco" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfW1wsBGiO_UMEPT6dIpCH0AhNzBJpjK-Wz1x07PHPZQSWjFQQmzcq52HTjD9Mk5WF5GqWLe05uyEmmxseflANp_TpVGJFCSHhgaobs1WJ3GasY6VhiovgA-YU4XbCuKEAlgIJ13i-_Qsv_VHkEJvMLgnYqmbo_V5ePMhhC8aoVO5blDt2UcdF7Tx07jzopIlNuAG85jsxtCD6e19RZ55Nsh_8vSakkFuheenwsgPtam_z4BJ8yjCko21toJGibKu3SqiU2JczmOg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+<div class="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-sm" data-icon="route">route</span>
+<span class="font-label text-[10px] font-bold tracking-widest uppercase">The Ridge Loop</span>
+</div>
+</div>
+<!-- Interaction Bar -->
+<div class="p-4 flex items-center gap-6 border-t border-white/5">
+<button class="flex items-center gap-2 text-primary group">
+<span class="material-symbols-outlined transition-transform group-hover:scale-125" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label text-xs font-bold">128</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="mode_comment">mode_comment</span>
+<span class="font-label text-xs font-bold">14</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors ml-auto">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</article>
+<!-- Activity Card 2 -->
+<article class="glass-card rounded-xl overflow-hidden border border-white/5 shadow-2xl">
+<div class="p-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<img alt="Friend" class="w-10 h-10 rounded-full object-cover border border-outline-variant" data-alt="Profile of a male cyclist with stubble, looking over his shoulder with mountain peaks in the background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYzD_ycFgaGeegskabgjrB5766EJWArE0iVI8JIVFQ_HEzaXBuTQvY_-VOSbhFr8LrP8Ir9UsnDEVmuhxno42eBHQ-4ZJlHBuhYYxnq_OoXPDjAVINK-rOAYYkAfFh5UVyK7XjqQQbz_w3BLaongsX7yp12y6_RNtn7TI9PNRg6MGcsOOPakV3NGS_QZQspdQtrQNMYNY7m92MGbbTwzjKSQa7stWIdZSMnqLfDQOeg-vSVTfNNZD-B4AjO9SjHih7VPa18Oc8ltI"/>
+<div>
+<h3 class="text-sm font-bold">Tom 'Wheels' Brooks</h3>
+<p class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">5 hours ago</p>
+</div>
+</div>
+</div>
+<div class="px-4 pb-2">
+<h4 class="text-lg font-black italic tracking-tight text-white mb-4 uppercase">Coastal Recovery Roll</h4>
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Distance</p>
+<p class="text-xl font-black text-primary italic">22.1 <span class="text-[10px] font-label not-italic">KM</span></p>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Time</p>
+<p class="text-xl font-black text-white italic">0:52 <span class="text-[10px] font-label not-italic">HR</span></p>
+</div>
+<div class="space-y-1">
+<p class="font-label text-[9px] text-on-surface-variant uppercase tracking-widest">Avg Watts</p>
+<p class="text-xl font-black text-tertiary italic">185 <span class="text-[10px] font-label not-italic">W</span></p>
+</div>
+</div>
+</div>
+<!-- Featured Ride Photo -->
+<div class="w-full h-64 relative overflow-hidden">
+<img alt="Ride Photo" class="w-full h-full object-cover" data-alt="Wide angle shot of a solitary cyclist on a winding coastal road at sunset, long shadows stretching across the tarmac" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsAT-55fkuCh1Qb7BBz9qz5G4HSWggPOAe3GKqO_X6IS5zOt56IG4_SePlqC8ZdhW8i_NOXg1N2FNRGQpqgLNcOiplHxQ9MTXPR223W39zm8bGfJPLpDDFkFRSkNCur6CVya4oeqL9aTUCI_KZVY-qceAcaUgrzNevjhXOvvoKKy-rUAC6lzy_JvDKG7B8u_wBST2h4i0leYQhd2dsrSa1b9_p34_48Y0kkvBxBKWUP1ofVx_AOCv_KMr1xTu7C5yHNEc5IWHSdzw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-4 flex items-center gap-6 border-t border-white/5">
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors group">
+<span class="material-symbols-outlined group-hover:scale-125" data-icon="favorite">favorite</span>
+<span class="font-label text-xs font-bold">45</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined" data-icon="mode_comment">mode_comment</span>
+<span class="font-label text-xs font-bold">3</span>
+</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors ml-auto">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</article>
+</section>
+</main>
+<!-- FAB: Only relevant on Home/Feed/Dash -->
+<button class="fixed bottom-24 right-6 w-14 h-14 kinetic-gradient text-on-primary-fixed rounded-full shadow-[0_10px_30px_rgba(255,143,112,0.4)] flex items-center justify-center z-50 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl font-bold" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-6 w-full z-50 flex justify-around items-center px-6 py-3 bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-[40px] w-[92%] left-1/2 -translate-x-1/2 max-w-md shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#FF4500] scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Feed</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-3xl text-primary" data-icon="add_circle">add_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Start</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="emoji_events">emoji_events</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Awards</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-500 hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-manrope text-[10px] font-bold tracking-wider uppercase">Profile</span>
+</a>
+</nav>
+</body></html>
