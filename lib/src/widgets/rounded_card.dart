@@ -6,7 +6,7 @@ class RoundedCard extends StatelessWidget {
   final double? width;
   final EdgeInsetsGeometry padding;
 
-  const RoundedCard({
+  const RoundedCard({super.key, 
     required this.child,
     this.width,
     this.padding = const EdgeInsets.all(20),

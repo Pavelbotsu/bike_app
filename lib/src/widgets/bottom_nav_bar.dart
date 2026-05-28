@@ -5,7 +5,7 @@ class StyledBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
-  const StyledBottomNavBar({required this.selectedIndex, required this.onTap});
+  const StyledBottomNavBar({super.key, required this.selectedIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

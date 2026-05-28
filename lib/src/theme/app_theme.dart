@@ -21,7 +21,6 @@ class AppTheme {
       colorScheme: const ColorScheme.dark(
         primary: AppColors.accent,
         secondary: AppColors.highlight,
-        background: AppColors.background,
         surface: AppColors.surface,
       ),
       textTheme: const TextTheme(

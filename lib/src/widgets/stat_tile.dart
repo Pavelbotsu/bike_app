@@ -6,7 +6,7 @@ class StatTile extends StatelessWidget {
   final String value;
   final Color accent;
 
-  const StatTile({
+  const StatTile({super.key, 
     required this.label,
     required this.value,
     this.accent = AppColors.accent,
