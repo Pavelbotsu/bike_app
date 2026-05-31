@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import '../models/hud_config.dart';
 import '../services/ride_tracking_service.dart';
 import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
@@ -25,6 +27,8 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
 
   double _speedKmh = 0;
   double _distanceKm = 0;
+  double _maxSpeedKmh = 0;
+  double _elevationM = 0;
   Duration _elapsed = Duration.zero;
   Position? _lastPosition;
   bool _paused = false;
@@ -32,11 +36,29 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
   DateTime? _startTime;
   List<LatLng> _routePoints = [];
 
+  List<HudConfig> _hudConfigs = [];
+  int _hudIndex = 0;
+
   bool get _isIdle => _startTime == null;
+  HudConfig get _activeHud =>
+      _hudConfigs.isEmpty ? HudConfig.defaultConfig : _hudConfigs[_hudIndex];
 
   @override
   void initState() {
     super.initState();
+    _loadHud();
+    HudConfigService.instance.addListener(_loadHud);
+  }
+
+  Future<void> _loadHud() async {
+    final configs = await HudConfigService.instance.loadAll();
+    final idx = await HudConfigService.instance.getActiveIndex();
+    if (mounted) {
+      setState(() {
+        _hudConfigs = configs;
+        _hudIndex = idx.clamp(0, configs.length - 1);
+      });
+    }
   }
 
   Future<void> _startRide() async {
@@ -47,6 +69,7 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
       return;
     }
 
+    WakelockPlus.enable();
     setState(() => _startTime = DateTime.now());
     _stopwatch.start();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -70,6 +93,8 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
       }
       _lastPosition = pos;
       _speedKmh = pos.speed * 3.6;
+      if (_speedKmh > _maxSpeedKmh) _maxSpeedKmh = _speedKmh;
+      _elevationM = pos.altitude;
       _routePoints.add(newPoint);
     });
     try {
@@ -102,11 +127,14 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
     final ride = _trackingService.finish(startTime);
     await RideHistoryService.instance.saveRide(ride);
 
+    WakelockPlus.disable();
     _stopwatch.reset();
     setState(() {
       _startTime = null;
       _speedKmh = 0;
+      _maxSpeedKmh = 0;
       _distanceKm = 0;
+      _elevationM = 0;
       _elapsed = Duration.zero;
       _lastPosition = null;
       _paused = false;
@@ -121,23 +149,17 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
 
   @override
   void dispose() {
+    HudConfigService.instance.removeListener(_loadHud);
     _timer?.cancel();
     _positionSub?.cancel();
     _trackingService.stop();
+    WakelockPlus.disable();
     super.dispose();
   }
 
-  String _formatSpeed(double kmh) => kmh.toStringAsFixed(1);
-  String _formatDist(double km) => '${km.toStringAsFixed(2)} km';
   String _formatClock(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
-  String _formatTime(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -229,9 +251,9 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
               ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _buildLiveMap(),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         if (_error != null)
           RoundedCard(
             padding: const EdgeInsets.all(16),
@@ -240,28 +262,22 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
               style: const TextStyle(color: Colors.redAccent),
             ),
           )
-        else ...[
-          _SpeedCard(value: _formatSpeed(_speedKmh)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _MetricBubble(
-                  label: 'DISTANCE',
-                  value: _formatDist(_distanceKm),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _MetricBubble(
-                  label: 'TIME',
-                  value: _formatTime(_elapsed),
-                ),
-              ),
-            ],
+        else
+          _HudPanel(
+            config: _activeHud,
+            configs: _hudConfigs,
+            activeIndex: _hudIndex,
+            onPageChanged: (i) {
+              setState(() => _hudIndex = i);
+              HudConfigService.instance.setActiveIndex(i);
+            },
+            speedKmh: _speedKmh,
+            distanceKm: _distanceKm,
+            elapsed: _elapsed,
+            maxSpeedKmh: _maxSpeedKmh,
+            elevationM: _elevationM,
           ),
-        ],
-        const Spacer(),
+        const Flexible(child: SizedBox()),
         Row(
           children: [
             Expanded(
@@ -316,7 +332,7 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
 
   Widget _buildLiveMap() {
     return SizedBox(
-      height: 170,
+      height: 150,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: FlutterMap(
@@ -369,77 +385,283 @@ class _LiveRideScreenState extends State<LiveRideScreen> {
   }
 }
 
-class _SpeedCard extends StatelessWidget {
-  final String value;
+String _fmtMetric(
+  HudMetric m, {
+  required double speedKmh,
+  required double distanceKm,
+  required Duration elapsed,
+  required double maxSpeedKmh,
+  required double elevationM,
+}) {
+  switch (m) {
+    case HudMetric.speed:
+      return speedKmh.toStringAsFixed(1);
+    case HudMetric.distance:
+      return '${distanceKm.toStringAsFixed(2)} km';
+    case HudMetric.time:
+      final h = elapsed.inHours;
+      final mm = elapsed.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final ss = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+      return h > 0 ? '$h:$mm:$ss' : '$mm:$ss';
+    case HudMetric.avgSpeed:
+      if (elapsed.inSeconds == 0) return '0.0';
+      return (distanceKm / elapsed.inSeconds * 3600).toStringAsFixed(1);
+    case HudMetric.maxSpeed:
+      return maxSpeedKmh.toStringAsFixed(1);
+    case HudMetric.elevation:
+      return '${elevationM.toStringAsFixed(0)} m';
+  }
+}
 
-  const _SpeedCard({required this.value});
+class _HudPanel extends StatefulWidget {
+  final HudConfig config;
+  final List<HudConfig> configs;
+  final int activeIndex;
+  final ValueChanged<int> onPageChanged;
+  final double speedKmh;
+  final double distanceKm;
+  final Duration elapsed;
+  final double maxSpeedKmh;
+  final double elevationM;
+
+  const _HudPanel({
+    required this.config,
+    required this.configs,
+    required this.activeIndex,
+    required this.onPageChanged,
+    required this.speedKmh,
+    required this.distanceKm,
+    required this.elapsed,
+    required this.maxSpeedKmh,
+    required this.elevationM,
+  });
+
+  @override
+  State<_HudPanel> createState() => _HudPanelState();
+}
+
+class _HudPanelState extends State<_HudPanel> {
+  late PageController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = PageController(initialPage: widget.activeIndex);
+  }
+
+  @override
+  void didUpdateWidget(_HudPanel old) {
+    super.didUpdateWidget(old);
+    if (old.activeIndex != widget.activeIndex &&
+        _ctrl.hasClients &&
+        (_ctrl.page?.round() ?? widget.activeIndex) != widget.activeIndex) {
+      _ctrl.jumpToPage(widget.activeIndex);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String _val(HudMetric m) => _fmtMetric(
+        m,
+        speedKmh: widget.speedKmh,
+        distanceKm: widget.distanceKm,
+        elapsed: widget.elapsed,
+        maxSpeedKmh: widget.maxSpeedKmh,
+        elevationM: widget.elevationM,
+      );
 
   @override
   Widget build(BuildContext context) {
-    return RoundedCard(
-      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Text(
-            'SPEED',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              letterSpacing: 1.6,
-              fontSize: 12,
-            ),
+    if (widget.configs.length <= 1) return _buildLayout(widget.config);
+
+    final cfg = widget.configs[widget.activeIndex];
+    return Column(
+      children: [
+        SizedBox(
+          height: _panelHeight(cfg),
+          child: PageView.builder(
+            controller: _ctrl,
+            itemCount: widget.configs.length,
+            onPageChanged: widget.onPageChanged,
+            itemBuilder: (_, i) => _buildLayout(widget.configs[i]),
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 64,
-              fontWeight: FontWeight.w900,
-              color: AppColors.accent,
-              height: 1,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _NavArrow(
+              icon: Icons.chevron_left,
+              onTap: widget.activeIndex > 0
+                  ? () => _ctrl.animateToPage(
+                        widget.activeIndex - 1,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                      )
+                  : null,
             ),
+            const SizedBox(width: 8),
+            ...List.generate(widget.configs.length, (i) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == widget.activeIndex ? 16 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: i == widget.activeIndex
+                      ? AppColors.accent
+                      : AppColors.textSecondary.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              );
+            }),
+            const SizedBox(width: 8),
+            _NavArrow(
+              icon: Icons.chevron_right,
+              onTap: widget.activeIndex < widget.configs.length - 1
+                  ? () => _ctrl.animateToPage(
+                        widget.activeIndex + 1,
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                      )
+                  : null,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          cfg.name.toUpperCase(),
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 10,
+            letterSpacing: 1.4,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'KM/H',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-            ),
+        ),
+      ],
+    );
+  }
+
+  double _panelHeight(HudConfig cfg) {
+    if (cfg.primary.isEmpty) return 90;
+    if (cfg.secondary.isEmpty) return 110;
+    return 185;
+  }
+
+  Widget _buildLayout(HudConfig cfg) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (cfg.primary.isNotEmpty)
+          Row(
+            children: cfg.primary
+                .map(
+                  (m) => Expanded(
+                    child: RoundedCard(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            m.label,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              letterSpacing: 1.4,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _val(m),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.accent,
+                              height: 1,
+                            ),
+                          ),
+                          if (m.unit.isNotEmpty)
+                            Text(
+                              m.unit.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .expand((w) => [w, const SizedBox(width: 10)])
+                .toList()
+              ..removeLast(),
+          ),
+        if (cfg.secondary.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: cfg.secondary
+                .map(
+                  (m) => Expanded(
+                    child: RoundedCard(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 10),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            m.label,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              letterSpacing: 1.3,
+                              fontSize: 9,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _val(m),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+                .expand((w) => [w, const SizedBox(width: 8)])
+                .toList()
+              ..removeLast(),
           ),
         ],
-      ),
+      ],
     );
   }
 }
 
-class _MetricBubble extends StatelessWidget {
-  final String label;
-  final String value;
+class _NavArrow extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
 
-  const _MetricBubble({required this.label, required this.value});
+  const _NavArrow({required this.icon, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return RoundedCard(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              letterSpacing: 1.5,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-          ),
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Icon(
+        icon,
+        size: 20,
+        color: onTap != null
+            ? AppColors.textSecondary
+            : AppColors.textSecondary.withValues(alpha: 0.2),
       ),
     );
   }

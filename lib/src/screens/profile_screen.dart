@@ -4,6 +4,7 @@ import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/rounded_card.dart';
 import 'post_ride_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -55,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             const SizedBox(height: 24),
             _buildLifetimeMetricsCard(),
             const SizedBox(height: 24),
@@ -71,18 +72,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
-      children: const [
-        CircleAvatar(
+      children: [
+        const CircleAvatar(
           radius: 28,
           backgroundColor: AppColors.accent,
           child: Icon(Icons.person, size: 32, color: AppColors.background),
         ),
-        SizedBox(width: 16),
-        Text(
-          'RIDER',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+        const SizedBox(width: 16),
+        const Expanded(
+          child: Text(
+            'RIDER',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.settings_outlined,
+              color: AppColors.textSecondary),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ),
         ),
       ],
     );
