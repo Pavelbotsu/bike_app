@@ -30,11 +30,11 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = const [
-    HomeScreen(),
-    FeedScreen(),
-    LiveRideScreen(),
-    ProfileScreen(),
+  late final List<Widget> _pages = [
+    HomeScreen(onStartRide: () => _onDestinationSelected(2)),
+    const FeedScreen(),
+    const LiveRideScreen(),
+    const ProfileScreen(),
   ];
 
   void _onDestinationSelected(int index) {

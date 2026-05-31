@@ -37,7 +37,7 @@ class StyledBottomNavBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: selected
-                    ? AppColors.accent.withOpacity(0.15)
+                    ? AppColors.accent.withValues(alpha: 0.15)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -79,7 +79,7 @@ class _NavItem {
 
 const List<_NavItem> _navItems = [
   _NavItem(Icons.home_filled, 'HOME'),
-  _NavItem(Icons.dynamic_feed, 'FEED'),
+  _NavItem(Icons.map_outlined, 'ROUTES'),
   _NavItem(Icons.play_circle_fill, 'START'),
   _NavItem(Icons.person, 'PROFILE'),
 ];

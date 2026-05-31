@@ -13,267 +13,176 @@ class FeedScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            const _TopPerformersSection(),
-            const SizedBox(height: 24),
-            Expanded(child: _buildFeedList()),
+            const Text(
+              'ROUTES',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                children: const [
+                  _RouteCard(
+                    name: 'Coastal Loop',
+                    distance: '34.2 km',
+                    elevation: '210m gain',
+                    terrain: _Terrain.road,
+                    difficulty: _Difficulty.moderate,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Misty Ridge Trail',
+                    distance: '15.4 km',
+                    elevation: '420m gain',
+                    terrain: _Terrain.gravel,
+                    difficulty: _Difficulty.hard,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'City Circuit',
+                    distance: '12.5 km',
+                    elevation: '65m gain',
+                    terrain: _Terrain.road,
+                    difficulty: _Difficulty.easy,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Forest Switchbacks',
+                    distance: '22.8 km',
+                    elevation: '680m gain',
+                    terrain: _Terrain.trail,
+                    difficulty: _Difficulty.hard,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Riverside Path',
+                    distance: '8.3 km',
+                    elevation: '30m gain',
+                    terrain: _Terrain.road,
+                    difficulty: _Difficulty.easy,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Mountain Pass',
+                    distance: '45.0 km',
+                    elevation: '1,240m gain',
+                    terrain: _Terrain.gravel,
+                    difficulty: _Difficulty.hard,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Old Town Classic',
+                    distance: '18.6 km',
+                    elevation: '120m gain',
+                    terrain: _Terrain.road,
+                    difficulty: _Difficulty.moderate,
+                  ),
+                  SizedBox(height: 14),
+                  _RouteCard(
+                    name: 'Valley Gravel Loop',
+                    distance: '28.4 km',
+                    elevation: '380m gain',
+                    terrain: _Terrain.gravel,
+                    difficulty: _Difficulty.moderate,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildHeader() {
-    return const Text(
-      'TOP PERFORMERS',
-      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-    );
-  }
-
-  Widget _buildFeedList() {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      children: const [
-        _FeedPostCard(
-          author: 'Sarah Jenkins',
-          title: 'MORNING CANYON SPRINT',
-          time: '2 HOURS AGO',
-          distance: '42.8 km',
-          duration: '1:24 hr',
-          metricLabel: 'ELEVATION',
-          metricValue: '840 m',
-          likes: 128,
-          comments: 14,
-        ),
-        SizedBox(height: 18),
-        _FeedPostCard(
-          author: "Tom 'Wheels' Brooks",
-          title: 'COASTAL RECOVERY ROLL',
-          time: '5 HOURS AGO',
-          distance: '22.1 km',
-          duration: '0:52 hr',
-          metricLabel: 'AVG WATTS',
-          metricValue: '185 w',
-          likes: 45,
-          comments: 3,
-        ),
-      ],
-    );
-  }
 }
 
-class _TopPerformersSection extends StatelessWidget {
-  const _TopPerformersSection();
+enum _Terrain { road, gravel, trail }
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _TopPerformerCard(
-          position: '1st',
-          name: 'Marcus V.',
-          distance: '428.5 km',
-          accentColor: AppColors.highlight,
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _TopPerformerCard(
-            position: '2nd',
-            name: 'Elena R.',
-            distance: '392.1 km',
-            accentColor: AppColors.accent,
-          ),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _TopPerformerCard(
-            position: '3rd',
-            name: 'David S.',
-            distance: '385.0 km',
-            accentColor: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-}
+enum _Difficulty { easy, moderate, hard }
 
-class _TopPerformerCard extends StatelessWidget {
-  final String position;
+class _RouteCard extends StatelessWidget {
   final String name;
   final String distance;
-  final Color accentColor;
+  final String elevation;
+  final _Terrain terrain;
+  final _Difficulty difficulty;
 
-  const _TopPerformerCard({
-    required this.position,
+  const _RouteCard({
     required this.name,
     required this.distance,
-    required this.accentColor,
+    required this.elevation,
+    required this.terrain,
+    required this.difficulty,
   });
+
+  Color get _terrainColor => switch (terrain) {
+        _Terrain.road => AppColors.highlight,
+        _Terrain.gravel => AppColors.accent,
+        _Terrain.trail => const Color(0xFF8C6BFF),
+      };
+
+  String get _terrainLabel => switch (terrain) {
+        _Terrain.road => 'ROAD',
+        _Terrain.gravel => 'GRAVEL',
+        _Terrain.trail => 'TRAIL',
+      };
+
+  Color get _difficultyColor => switch (difficulty) {
+        _Difficulty.easy => AppColors.success,
+        _Difficulty.moderate => AppColors.accent,
+        _Difficulty.hard => Colors.redAccent,
+      };
+
+  String get _difficultyLabel => switch (difficulty) {
+        _Difficulty.easy => 'EASY',
+        _Difficulty.moderate => 'MODERATE',
+        _Difficulty.hard => 'HARD',
+      };
 
   @override
   Widget build(BuildContext context) {
     return RoundedCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(20),
+      child: Row(
         children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: accentColor.withOpacity(0.24),
-            child: Text(
-              position,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w800,
-              ),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFF161826),
+              borderRadius: BorderRadius.circular(16),
             ),
+            child: const Icon(Icons.route, color: AppColors.highlight, size: 28),
           ),
-          const SizedBox(height: 12),
-          Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            distance,
-            style: const TextStyle(
-              color: AppColors.highlight,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeedPostCard extends StatelessWidget {
-  final String author;
-  final String title;
-  final String time;
-  final String distance;
-  final String duration;
-  final String metricLabel;
-  final String metricValue;
-  final int likes;
-  final int comments;
-
-  const _FeedPostCard({
-    required this.author,
-    required this.title,
-    required this.time,
-    required this.distance,
-    required this.duration,
-    required this.metricLabel,
-    required this.metricValue,
-    required this.likes,
-    required this.comments,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return RoundedCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 22,
-                backgroundColor: AppColors.surface,
-                child: Icon(Icons.person, color: AppColors.accent),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$distance  •  $elevation',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
                   children: [
-                    Text(
-                      author,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
+                    _Chip(label: _terrainLabel, color: _terrainColor),
+                    const SizedBox(width: 8),
+                    _Chip(label: _difficultyLabel, color: _difficultyColor),
                   ],
                 ),
-              ),
-              const Icon(Icons.more_horiz, color: AppColors.textSecondary),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _MetricColumn(label: 'DISTANCE', value: distance),
-              _MetricColumn(label: 'TIME', value: duration),
-              _MetricColumn(
-                label: metricLabel,
-                value: metricValue,
-                accent: AppColors.highlight,
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Container(
-            height: 140,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F1220),
-              borderRadius: BorderRadius.circular(20),
+              ],
             ),
-            child: const Center(
-              child: Icon(
-                Icons.photo,
-                size: 42,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.favorite_border, color: AppColors.accent),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$likes',
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.chat_bubble_outline,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$comments',
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-              const Icon(Icons.share, color: AppColors.highlight),
-            ],
           ),
         ],
       ),
@@ -281,40 +190,29 @@ class _FeedPostCard extends StatelessWidget {
   }
 }
 
-class _MetricColumn extends StatelessWidget {
+class _Chip extends StatelessWidget {
   final String label;
-  final String value;
-  final Color accent;
+  final Color color;
 
-  const _MetricColumn({
-    required this.label,
-    required this.value,
-    this.accent = AppColors.accent,
-  });
+  const _Chip({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 10,
-            letterSpacing: 1.2,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
         ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: accent,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
