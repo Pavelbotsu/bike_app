@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
-import 'screens/feed_screen.dart';
+import 'screens/history_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/live_ride_screen.dart';
 import 'screens/profile_screen.dart';
@@ -31,16 +31,18 @@ class _MainScaffoldState extends State<MainScaffold> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages = [
-    HomeScreen(onStartRide: () => _onDestinationSelected(2)),
-    const FeedScreen(),
-    const LiveRideScreen(),
+    HomeScreen(onStartRide: _startRecording),
+    const HistoryScreen(),
     const ProfileScreen(),
   ];
 
-  void _onDestinationSelected(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  /// Launches the recording flow as a full-screen route. Because it sits above
+  /// the navigation Scaffold, the bottom bar is hidden and the ride can't be
+  /// abandoned by tapping another tab.
+  void _startRecording() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RideRecordingScreen()),
+    );
   }
 
   @override
@@ -50,7 +52,8 @@ class _MainScaffoldState extends State<MainScaffold> {
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: StyledBottomNavBar(
         selectedIndex: _selectedIndex,
-        onTap: _onDestinationSelected,
+        onTap: (i) => setState(() => _selectedIndex = i),
+        onRecord: _startRecording,
       ),
     );
   }

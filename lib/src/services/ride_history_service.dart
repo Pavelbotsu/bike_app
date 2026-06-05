@@ -28,6 +28,12 @@ class RideHistoryService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> renameRide(String id, String name) async {
+    await _ensureMigrated();
+    await DatabaseService.instance.renameRide(id, name);
+    notifyListeners();
+  }
+
   Future<void> _ensureMigrated() async {
     if (_migrated) return;
     _migrated = true;

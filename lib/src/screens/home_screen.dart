@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/ride.dart';
 import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 import '../widgets/rounded_card.dart';
 import 'post_ride_screen.dart';
 
@@ -122,13 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildTodayCard() {
     final hasData = _todayRides.isNotEmpty;
-    final distStr = hasData
-        ? '${_todayKm.toStringAsFixed(1)} km'
-        : '--';
-    final timeStr = hasData ? _fmtDuration(_todayDuration) : '--:--';
-    final elevStr = hasData
-        ? '${_todayElevation.toStringAsFixed(0)} m'
-        : '--';
+    final distStr = hasData ? '${fmtDistance(_todayKm)} km' : '--';
+    final timeStr = hasData ? fmtDuration(_todayDuration) : '--:--';
+    final elevStr = hasData ? '${fmtElevation(_todayElevation)} m' : '--';
 
     return RoundedCard(
       padding: const EdgeInsets.all(24),
@@ -177,6 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accent,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
@@ -187,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         onPressed: widget.onStartRide,
-        icon: const Icon(Icons.play_arrow, size: 24),
+        icon: const Icon(Icons.play_arrow_rounded, size: 24),
         label: const Text('START RIDE'),
       ),
     );
@@ -224,9 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'LAST RIDE',
-                    style: TextStyle(
+                  Text(
+                    'LAST RIDE · ${ride.displayName.toUpperCase()}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 10,
                       letterSpacing: 1.4,
@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '$date  ·  ${ride.distanceKm.toStringAsFixed(1)} km  ·  ${_fmtDuration(ride.duration)}',
+                    '$date  ·  ${fmtDistance(ride.distanceKm)} km  ·  ${fmtDuration(ride.duration)}',
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
@@ -249,13 +249,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
-  }
-
-  String _fmtDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 }
 

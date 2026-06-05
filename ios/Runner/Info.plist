@@ -45,5 +45,16 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Background location tracking -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Velocity needs your location to track your ride distance, speed, and route while you are actively using the app.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Velocity needs your location at all times, including when the screen is locked, so your ride is tracked continuously without missing any data.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Velocity needs your location at all times, including when the screen is locked, so your ride is tracked continuously without missing any data.</string>
 </dict>
 </plist>

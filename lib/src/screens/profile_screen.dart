@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/ride.dart';
 import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/formatters.dart';
 import '../widgets/rounded_card.dart';
 import 'post_ride_screen.dart';
 import 'settings_screen.dart';
@@ -61,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildLifetimeMetricsCard(),
             const SizedBox(height: 24),
             const Text(
-              'ACTIVITY HISTORY',
+              'RECENT ACTIVITY',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
@@ -115,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            km.toStringAsFixed(1),
+            fmtDistance(km),
             style: const TextStyle(fontSize: 44, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
@@ -134,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 14),
           _MetricRow(
             label: 'ELEVATION GAIN',
-            value: '${_totalElevationM.toStringAsFixed(0)} m',
+            value: '${fmtElevation(_totalElevationM)} m',
             valueColor: AppColors.highlight,
           ),
         ],
@@ -174,14 +175,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    final recent = _rides.take(5).toList();
     return ListView.separated(
-      itemCount: _rides.length,
+      itemCount: recent.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) => _RideTile(
-        ride: _rides[i],
+        ride: recent[i],
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => PostRideScreen(ride: _rides[i]),
+            builder: (_) => PostRideScreen(ride: recent[i]),
           ),
         ),
       ),
@@ -201,13 +203,6 @@ class _RideTile extends StatelessWidget {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
-
-  String _fmtDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
   }
 
   @override
@@ -237,7 +232,9 @@ class _RideTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _fmtDate(ride.startTime),
+                    ride.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -245,7 +242,9 @@ class _RideTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${ride.distanceKm.toStringAsFixed(2)} km  ·  ${_fmtDuration(ride.duration)}',
+                    '${_fmtDate(ride.startTime)}  ·  ${fmtDistance(ride.distanceKm)} km  ·  ${fmtDuration(ride.duration)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 12,
@@ -254,11 +253,12 @@ class _RideTile extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  ride.avgSpeedKmh.toStringAsFixed(1),
+                  fmtSpeed(ride.avgMovingSpeedKmh),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
