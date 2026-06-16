@@ -151,17 +151,46 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
         final dt =
             pos.timestamp.difference(_lastPosition!.timestamp).inMilliseconds /
                 1000;
-        if (dt > 0 && dt < 30 && pos.speed * 3.6 >= 1.0) {
+        if (dt > 0 && dt < 30 && pos.speedKmh >= 1.0) {
           _movingSeconds += dt;
         }
         final dAlt = pos.altitude - _lastPosition!.altitude;
         if (dAlt > 0) _elevationGainM += dAlt;
       }
+      final dtMs = _lastPosition != null
+          ? pos.timestamp
+              .difference(_lastPosition!.timestamp)
+              .inMilliseconds
+              .clamp(0, 5000)
+              .toDouble()
+          : 0.0;
       _lastPosition = pos;
       _accuracyM = pos.accuracy;
-      _speedKmh = pos.speed * 3.6;
-      if (_speedKmh > _maxSpeedKmh) _maxSpeedKmh = _speedKmh;
+      // Smooth displayed speed with a 5-sample rolling average; max/charts use raw
+      _recentSpeeds.add(pos.speedKmh);
+      if (_recentSpeeds.length > 5) _recentSpeeds.removeAt(0);
+      _speedKmh = _recentSpeeds.reduce((a, b) => a + b) / _recentSpeeds.length;
+      if (pos.speedKmh > _maxSpeedKmh) _maxSpeedKmh = pos.speedKmh;
       _routePoints.add(newPoint);
+
+      // Auto-pause / auto-resume
+      if (!_paused) {
+        if (pos.speedKmh < 1.5) {
+          _slowMs += dtMs;
+          if (_slowMs >= 8000 && !_autoPaused) {
+            _autoPaused = true;
+            _stopwatch.stop();
+            _trackingService.pause();
+          }
+        } else if (pos.speedKmh >= 2.5) {
+          _slowMs = 0;
+          if (_autoPaused) {
+            _autoPaused = false;
+            _stopwatch.start();
+            _trackingService.resume();
+          }
+        }
+      }
 
       // Feed live charts
       _speedSpots.add(FlSpot(t, double.parse(_speedKmh.toStringAsFixed(1))));
@@ -176,7 +205,14 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   }
 
   void _togglePause() {
-    setState(() => _paused = !_paused);
+    setState(() {
+      _paused = !_paused;
+      if (_autoPaused) {
+        // Manual resume clears auto-pause state
+        _autoPaused = false;
+        _slowMs = 0;
+      }
+    });
     if (_paused) {
       _stopwatch.stop();
       _positionSub?.cancel();
@@ -468,36 +504,139 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       ),
       child: SafeArea(
         bottom: false,
-        child: Padding(
-          // Bottom padding accounts for the floating indicator + action buttons
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 160),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
+        child: _hud.hasGridLayout
+            ? _buildGridDataBody()
+            : _buildListDataBody(),
+      ),
+    );
+  }
+
+  // Grid-based rendering — positions derived from HudWidgetPlacement (col, row).
+  Widget _buildGridDataBody() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const hPad = 20.0;
+        const statusH = 52.0; // LIVE chip + GPS pill row
+        const bottomH = 160.0; // indicator + PAUSE/STOP overlay
+        final cellW =
+            (constraints.maxWidth - hPad * 2) / kHudGridCols;
+        final availH = constraints.maxHeight - statusH - bottomH;
+        final cellH = availH / kHudGridRows;
+
+        return Stack(
+          children: [
+            // Status row
+            Positioned(
+              top: 14,
+              left: hPad,
+              right: hPad,
+              child: Row(
                 children: [
                   _Chip(
-                    label: _paused ? 'PAUSED' : 'LIVE',
-                    color: _paused
+                    label: _autoPaused ? 'AUTO-PAUSED' : _paused ? 'PAUSED' : 'LIVE',
+                    color: (_paused || _autoPaused)
                         ? const Color(0xFFE65100).withValues(alpha: 0.38)
                         : AppColors.accent.withValues(alpha: 0.28),
                   ),
                   const Spacer(),
                   _GpsPill(
-                    accuracyM: _accuracyM,
-                    acquiring: _lastPosition == null,
-                  ),
+                      accuracyM: _accuracyM,
+                      acquiring: _lastPosition == null),
                 ],
               ),
-              const SizedBox(height: 32),
-              _buildPrimary(),
-              if (_hud.secondary.isNotEmpty) ...[
-                const SizedBox(height: 32),
-                _buildSecondary(),
-              ],
+            ),
+            // Metric tiles at grid positions
+            for (final p in _hud.placements)
+              Positioned(
+                left: hPad + p.col * cellW,
+                top: statusH + p.row * cellH,
+                width: cellW,
+                height: cellH,
+                child: _buildGridMetricTile(p.metric, cellW, cellH),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGridMetricTile(HudMetric m, double cellW, double cellH) {
+    final valueFontSize = (cellH * 0.42).clamp(24.0, 64.0);
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            m.label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 2),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              _metricValue(m),
+              style: TextStyle(
+                fontSize: valueFontSize,
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                height: 0.95,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          if (m.unit.isNotEmpty)
+            Text(
+              m.unit.toUpperCase(),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Classic column-based rendering (no grid placements configured).
+  Widget _buildListDataBody() {
+    return Padding(
+      // Bottom padding accounts for the floating indicator + action buttons
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 160),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _Chip(
+                label: _paused ? 'PAUSED' : 'LIVE',
+                color: _paused
+                    ? const Color(0xFFE65100).withValues(alpha: 0.38)
+                    : AppColors.accent.withValues(alpha: 0.28),
+              ),
+              const Spacer(),
+              _GpsPill(
+                accuracyM: _accuracyM,
+                acquiring: _lastPosition == null,
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 32),
+          _buildPrimary(),
+          if (_hud.secondary.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            _buildSecondary(),
+          ],
+        ],
       ),
     );
   }
@@ -552,8 +691,8 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
               Row(
                 children: [
                   _Chip(
-                    label: _paused ? 'PAUSED' : 'LIVE',
-                    color: _paused
+                    label: _autoPaused ? 'AUTO-PAUSED' : _paused ? 'PAUSED' : 'LIVE',
+                    color: (_paused || _autoPaused)
                         ? const Color(0xFFE65100).withValues(alpha: 0.38)
                         : AppColors.accent.withValues(alpha: 0.28),
                   ),
@@ -842,8 +981,8 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
               Row(
                 children: [
                   _Chip(
-                    label: _paused ? 'PAUSED' : 'LIVE',
-                    color: _paused
+                    label: _autoPaused ? 'AUTO-PAUSED' : _paused ? 'PAUSED' : 'LIVE',
+                    color: (_paused || _autoPaused)
                         ? const Color(0xFFE65100).withValues(alpha: 0.38)
                         : AppColors.accent.withValues(alpha: 0.28),
                   ),
