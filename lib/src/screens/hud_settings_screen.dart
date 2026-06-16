@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/hud_config.dart';
 import '../theme/app_theme.dart';
 import '../widgets/rounded_card.dart';
+import 'hud_grid_editor_screen.dart';
 
 class HudSettingsScreen extends StatefulWidget {
   const HudSettingsScreen({super.key});
@@ -47,6 +48,18 @@ class _HudSettingsScreenState extends State<HudSettingsScreen> {
     final updated = await Navigator.of(context).push<HudConfig>(
       MaterialPageRoute(
         builder: (_) => _EditHudScreen(config: _configs[index]),
+      ),
+    );
+    if (updated != null) {
+      setState(() => _configs[index] = updated);
+      _save();
+    }
+  }
+
+  void _editGridLayout(int index) async {
+    final updated = await Navigator.of(context).push<HudConfig>(
+      MaterialPageRoute(
+        builder: (_) => HudGridEditorScreen(config: _configs[index]),
       ),
     );
     if (updated != null) {
@@ -114,6 +127,7 @@ class _HudSettingsScreenState extends State<HudSettingsScreen> {
                 isActive: i == _activeIndex,
                 onActivate: () => _setActive(i),
                 onEdit: () => _editConfig(i),
+                onGridEdit: () => _editGridLayout(i),
                 onDelete: _configs.length > 1 ? () => _deleteConfig(i) : null,
               ),
             ),
@@ -126,6 +140,7 @@ class _ConfigTile extends StatelessWidget {
   final bool isActive;
   final VoidCallback onActivate;
   final VoidCallback onEdit;
+  final VoidCallback onGridEdit;
   final VoidCallback? onDelete;
 
   const _ConfigTile({
@@ -133,6 +148,7 @@ class _ConfigTile extends StatelessWidget {
     required this.isActive,
     required this.onActivate,
     required this.onEdit,
+    required this.onGridEdit,
     this.onDelete,
   });
 
@@ -183,8 +199,20 @@ class _ConfigTile extends StatelessWidget {
             ),
           ),
           IconButton(
+            icon: Icon(
+              Icons.grid_view_rounded,
+              color: config.hasGridLayout
+                  ? AppColors.accent
+                  : AppColors.textSecondary,
+              size: 18,
+            ),
+            tooltip: 'Grid layout editor',
+            onPressed: onGridEdit,
+          ),
+          IconButton(
             icon: const Icon(Icons.edit_outlined,
                 color: AppColors.textSecondary, size: 18),
+            tooltip: 'Edit metrics list',
             onPressed: onEdit,
           ),
           if (onDelete != null)
@@ -199,6 +227,10 @@ class _ConfigTile extends StatelessWidget {
   }
 
   String _metricSummary() {
+    if (config.hasGridLayout) {
+      final names = config.placements.map((p) => p.metric.label).join(' · ');
+      return 'Grid layout  ·  $names';
+    }
     final all = [...config.primary, ...config.secondary];
     return all.map((m) => m.label).join(' · ');
   }

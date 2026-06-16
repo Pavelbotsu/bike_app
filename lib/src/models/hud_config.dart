@@ -2,6 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Grid dimensions shared by the editor canvas and the live data page.
+const kHudGridCols = 4;
+const kHudGridRows = 6;
+
 enum HudMetric { speed, distance, time, avgSpeed, maxSpeed, elevation }
 
 extension HudMetricLabel on HudMetric {
@@ -28,16 +32,50 @@ extension HudMetricLabel on HudMetric {
   }
 }
 
+/// One metric placed at a specific grid cell.
+class HudWidgetPlacement {
+  final HudMetric metric;
+  final int col; // 0 .. kHudGridCols-1
+  final int row; // 0 .. kHudGridRows-1
+
+  const HudWidgetPlacement({
+    required this.metric,
+    required this.col,
+    required this.row,
+  });
+
+  Map<String, dynamic> toJson() =>
+      {'metric': metric.name, 'col': col, 'row': row};
+
+  factory HudWidgetPlacement.fromJson(Map<String, dynamic> j) =>
+      HudWidgetPlacement(
+        metric: HudMetric.values.byName(j['metric'] as String),
+        col: j['col'] as int,
+        row: j['row'] as int,
+      );
+
+  HudWidgetPlacement copyWith({int? col, int? row}) => HudWidgetPlacement(
+        metric: metric,
+        col: col ?? this.col,
+        row: row ?? this.row,
+      );
+}
+
 class HudConfig {
   final String name;
   final List<HudMetric> primary;    // shown large, max 2
   final List<HudMetric> secondary;  // shown small, max 4
+  /// Grid-placed layout; empty = use primary/secondary list rendering.
+  final List<HudWidgetPlacement> placements;
 
   const HudConfig({
     required this.name,
     required this.primary,
     required this.secondary,
+    this.placements = const [],
   });
+
+  bool get hasGridLayout => placements.isNotEmpty;
 
   static const HudConfig defaultConfig = HudConfig(
     name: 'Default',
@@ -55,6 +93,8 @@ class HudConfig {
         'name': name,
         'primary': primary.map((m) => m.name).toList(),
         'secondary': secondary.map((m) => m.name).toList(),
+        if (placements.isNotEmpty)
+          'placements': placements.map((p) => p.toJson()).toList(),
       };
 
   factory HudConfig.fromJson(Map<String, dynamic> json) => HudConfig(
@@ -65,17 +105,25 @@ class HudConfig {
         secondary: (json['secondary'] as List<dynamic>)
             .map((s) => HudMetric.values.byName(s as String))
             .toList(),
+        placements: json['placements'] != null
+            ? (json['placements'] as List<dynamic>)
+                .map((p) => HudWidgetPlacement.fromJson(
+                    p as Map<String, dynamic>))
+                .toList()
+            : const [],
       );
 
   HudConfig copyWith({
     String? name,
     List<HudMetric>? primary,
     List<HudMetric>? secondary,
+    List<HudWidgetPlacement>? placements,
   }) =>
       HudConfig(
         name: name ?? this.name,
         primary: primary ?? this.primary,
         secondary: secondary ?? this.secondary,
+        placements: placements ?? this.placements,
       );
 }
 

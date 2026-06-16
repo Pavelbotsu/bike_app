@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:geolocator/geolocator.dart';
 import 'location_service.dart';
 import '../models/gps_point.dart';
 import '../models/ride.dart';
@@ -7,10 +6,10 @@ import '../models/ride.dart';
 class RideTrackingService {
   final LocationService _locationService = LocationService();
   final List<GpsPoint> _points = [];
-  StreamSubscription<Position>? _sub;
+  StreamSubscription<GpsPoint>? _sub;
   bool _recording = false;
 
-  Stream<Position> get positionStream => _locationService.positionStream;
+  Stream<GpsPoint> get gpsPointStream => _locationService.gpsPointStream;
 
   List<GpsPoint> get points => List.unmodifiable(_points);
 
@@ -18,8 +17,8 @@ class RideTrackingService {
     _points.clear();
     _recording = true;
     await _locationService.start();
-    _sub = _locationService.positionStream.listen((pos) {
-      if (_recording) _points.add(GpsPoint.fromPosition(pos));
+    _sub = _locationService.gpsPointStream.listen((GpsPoint point) {
+      if (_recording) _points.add(point);
     });
   }
 

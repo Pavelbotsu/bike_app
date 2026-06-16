@@ -1,20 +1,26 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import '../models/gps_point.dart';
 
 enum LocationMode { economy, performance, highSpeed }
 
 const double _highSpeedThresholdMs = 20 / 3.6;
 const double _lowSpeedThresholdMs = 15 / 3.6;
 
+const _kMethodChannel = MethodChannel('com.example.bike_app/location');
+const _kEventChannel = EventChannel('com.example.bike_app/location_events');
+
 class LocationService {
-  StreamController<Position> _positionController =
-      StreamController<Position>.broadcast();
-  StreamSubscription<Position>? _subscription;
+  StreamController<GpsPoint> _gpsController =
+      StreamController<GpsPoint>.broadcast();
+  StreamSubscription<Position>? _geoSub;
+  StreamSubscription<dynamic>? _eventSub;
   LocationMode _currentMode = LocationMode.economy;
   bool _isRunning = false;
 
-  Stream<Position> get positionStream => _positionController.stream;
+  Stream<GpsPoint> get gpsPointStream => _gpsController.stream;
   LocationMode get currentMode => _currentMode;
 
   Future<void> start() async {
@@ -41,89 +47,96 @@ class LocationService {
     }
 
     _isRunning = true;
-    _startStream();
+
+    if (Platform.isAndroid) {
+      await _startAndroid();
+    } else {
+      _startIos();
+    }
+  }
+
+  Future<void> _startAndroid() async {
+    await _kMethodChannel.invokeMethod<void>('startService');
+    _eventSub = _kEventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        if (_gpsController.isClosed) return;
+        try {
+          final point =
+              GpsPoint.fromNativeMap(Map<Object?, Object?>.from(event as Map));
+          _gpsController.add(point);
+          _autoAdjustMode(point.speedKmh / 3.6);
+        } catch (_) {}
+      },
+      onError: (Object error) {
+        if (!_gpsController.isClosed) _gpsController.addError(error);
+      },
+    );
+  }
+
+  void _startIos() {
+    final settings = _getIosSettings();
+    _geoSub =
+        Geolocator.getPositionStream(locationSettings: settings).listen(
+      (Position pos) {
+        if (_gpsController.isClosed) return;
+        final point = GpsPoint.fromPosition(pos);
+        _gpsController.add(point);
+        _autoAdjustMode(pos.speed);
+      },
+      onError: (Object error) {
+        if (!_gpsController.isClosed) _gpsController.addError(error);
+      },
+    );
+  }
+
+  void _autoAdjustMode(double speedMs) {
+    if (speedMs > _highSpeedThresholdMs &&
+        _currentMode != LocationMode.highSpeed) {
+      _currentMode = LocationMode.highSpeed;
+      if (!Platform.isAndroid) _restartIos();
+    } else if (speedMs < _lowSpeedThresholdMs &&
+        _currentMode == LocationMode.highSpeed) {
+      _currentMode = LocationMode.performance;
+      if (!Platform.isAndroid) _restartIos();
+    }
   }
 
   void setMode(LocationMode mode) {
     if (_currentMode != mode) {
       _currentMode = mode;
-      if (_isRunning) _restartStream();
+      if (_isRunning && !Platform.isAndroid) _restartIos();
     }
   }
 
-  void _startStream() {
-    final settings = _getSettings();
-    _subscription =
-        Geolocator.getPositionStream(locationSettings: settings).listen(
-      (Position position) {
-        if (_positionController.isClosed) return;
-        _positionController.add(position);
-        _autoAdjustMode(position.speed);
-      },
-      onError: (Object error) {
-        if (!_positionController.isClosed) {
-          _positionController.addError(error);
-        }
-      },
+  void _restartIos() {
+    _geoSub?.cancel();
+    _startIos();
+  }
+
+  AppleSettings _getIosSettings() {
+    return AppleSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 0,
+      activityType: ActivityType.fitness,
+      pauseLocationUpdatesAutomatically: false,
+      showBackgroundLocationIndicator: true,
     );
-  }
-
-  void _autoAdjustMode(double speed) {
-    if (speed > _highSpeedThresholdMs &&
-        _currentMode != LocationMode.highSpeed) {
-      setMode(LocationMode.highSpeed);
-    } else if (speed < _lowSpeedThresholdMs &&
-        _currentMode == LocationMode.highSpeed) {
-      setMode(LocationMode.performance);
-    }
-  }
-
-  LocationSettings _getSettings() {
-    Duration interval;
-    switch (_currentMode) {
-      case LocationMode.economy:
-        interval = const Duration(seconds: 2);
-        break;
-      case LocationMode.performance:
-        interval = const Duration(seconds: 1);
-        break;
-      case LocationMode.highSpeed:
-        interval = const Duration(milliseconds: 500);
-        break;
-    }
-
-    if (Platform.isAndroid) {
-      return AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
-        intervalDuration: interval,
-      );
-    }
-
-    if (Platform.isIOS) {
-      return AppleSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 0,
-        activityType: ActivityType.fitness,
-        pauseLocationUpdatesAutomatically: false,
-        showBackgroundLocationIndicator: true,
-      );
-    }
-
-    return LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 0);
-  }
-
-  void _restartStream() {
-    _subscription?.cancel();
-    _startStream();
   }
 
   void stop() {
     _isRunning = false;
-    _subscription?.cancel();
-    _subscription = null;
-    _positionController.close();
-    _positionController = StreamController<Position>.broadcast();
+
+    _geoSub?.cancel();
+    _geoSub = null;
+
+    if (Platform.isAndroid) {
+      _eventSub?.cancel();
+      _eventSub = null;
+      _kMethodChannel.invokeMethod<void>('stopService');
+    }
+
+    _gpsController.close();
+    _gpsController = StreamController<GpsPoint>.broadcast();
     _currentMode = LocationMode.economy;
   }
 }

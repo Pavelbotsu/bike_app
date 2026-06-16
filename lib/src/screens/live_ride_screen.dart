@@ -1,15 +1,21 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' hide log;
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../models/gps_point.dart';
 import '../models/hud_config.dart';
+import '../models/ride.dart';
+import '../services/records_service.dart';
 import '../services/ride_tracking_service.dart';
 import '../services/ride_history_service.dart';
+import '../utils/map_tiles.dart';
+import '../utils/path_interpolation.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/rounded_card.dart';
@@ -41,7 +47,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   final Stopwatch _stopwatch = Stopwatch();
   final PageController _pageController = PageController();
   Timer? _timer;
-  StreamSubscription<Position>? _positionSub;
+  StreamSubscription<GpsPoint>? _positionSub;
 
   // Live metrics
   double _speedKmh = 0;
@@ -51,17 +57,33 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   double _movingSeconds = 0;
   double? _accuracyM;
   Duration _elapsed = Duration.zero;
-  Position? _lastPosition;
+  GpsPoint? _lastPosition;
 
   bool _paused = false;
+  bool _autoPaused = false;
   bool _fullMap = false;
+  double _slowMs = 0.0;
   String? _error;
   DateTime? _startTime;
   final List<LatLng> _routePoints = [];
 
+  // Rolling buffer for display-only speed smoothing (5 samples ≈ 2.5 s)
+  final List<double> _recentSpeeds = [];
+
   // Chart data — appended on each GPS position
   final List<FlSpot> _speedSpots = [];
   final List<FlSpot> _altSpots = [];
+
+  MapStyle _mapStyle = MapStyle.standard;
+
+  // Countdown before ride starts (3,2,1,0=GO!, null=inactive)
+  int? _countdown;
+  Timer? _countdownTimer;
+
+  // Lap tracking
+  final List<LapSplit> _laps = [];
+  Duration _lapStartElapsed = Duration.zero;
+  double _lapStartKm = 0;
 
   // Screen navigation
   int _screenIndex = 0;
@@ -80,6 +102,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     _loadHud();
     HudConfigService.instance.addListener(_loadHud);
     _loadFavScreen();
+    loadMapStyle().then((s) { if (mounted) setState(() => _mapStyle = s); });
   }
 
   Future<void> _loadHud() async {
@@ -108,7 +131,31 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       if (mounted) setState(() => _error = e.toString());
       return;
     }
+    // Begin 3-2-1 countdown; GPS is already warming in the background
+    setState(() => _countdown = 3);
+    HapticFeedback.heavyImpact();
+    _countdownTimer =
+        Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      final next = (_countdown ?? 1) - 1;
+      setState(() => _countdown = next);
+      HapticFeedback.heavyImpact();
+      if (next <= 0) {
+        t.cancel();
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) {
+            setState(() => _countdown = null);
+            _beginRide();
+          }
+        });
+      }
+    });
+  }
 
+  void _beginRide() {
     WakelockPlus.enable();
     setState(() => _startTime = DateTime.now());
     _stopwatch.start();
@@ -116,8 +163,6 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       if (mounted) setState(() => _elapsed = _stopwatch.elapsed);
     });
     _listen();
-
-    // Jump to the user's favorite screen once the PageView is laid out
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_favScreen != 0 && _pageController.hasClients) {
         _pageController.jumpToPage(_favScreen);
@@ -127,7 +172,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   }
 
   void _listen() {
-    _positionSub = _trackingService.positionStream.listen(
+    _positionSub = _trackingService.gpsPointStream.listen(
       _onPosition,
       onError: (Object e) {
         if (mounted) setState(() => _error = e.toString());
@@ -135,7 +180,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     );
   }
 
-  void _onPosition(Position pos) {
+  void _onPosition(GpsPoint pos) {
     if (!mounted) return;
     final newPoint = LatLng(pos.latitude, pos.longitude);
     final t = _stopwatch.elapsed.inSeconds.toDouble();
@@ -225,6 +270,17 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     }
   }
 
+  void _recordLap() {
+    setState(() {
+      _laps.add(LapSplit(
+        elapsed: _elapsed - _lapStartElapsed,
+        distanceKm: _distanceKm - _lapStartKm,
+      ));
+      _lapStartElapsed = _elapsed;
+      _lapStartKm = _distanceKm;
+    });
+  }
+
   Future<void> _stopRide() async {
     _timer?.cancel();
     _timer = null;
@@ -232,7 +288,8 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     _positionSub = null;
     _stopwatch.stop();
 
-    final ride = _trackingService.finish(_startTime!);
+    final baseRide = _trackingService.finish(_startTime!);
+    final ride = _laps.isEmpty ? baseRide : baseRide.copyWith(laps: _laps);
     WakelockPlus.disable();
 
     bool save = true;
@@ -242,10 +299,14 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     if (save) {
       await RideHistoryService.instance.saveRide(ride);
     }
+    final newRecords =
+        save ? await RecordsService.checkAndUpdate(ride) : <String>[];
     if (!mounted) return;
     if (save) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => PostRideScreen(ride: ride)),
+        MaterialPageRoute(
+            builder: (_) =>
+                PostRideScreen(ride: ride, newRecords: newRecords)),
       );
     } else {
       Navigator.of(context).pop();
@@ -310,6 +371,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _countdownTimer?.cancel();
     _positionSub?.cancel();
     _trackingService.stop();
     HudConfigService.instance.removeListener(_loadHud);
@@ -342,13 +404,54 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _isIdle,
+      canPop: _isIdle && _countdown == null,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _confirmStopFromBack();
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: _isIdle ? _buildIdleScreen() : _buildRidingStack(),
+        body: _countdown != null
+            ? _buildCountdownOverlay()
+            : (_isIdle ? _buildIdleScreen() : _buildRidingStack()),
+      ),
+    );
+  }
+
+  // ─── 3-2-1 countdown overlay ──────────────────────────────────────────────
+
+  Widget _buildCountdownOverlay() {
+    final count = _countdown!;
+    final isGo = count <= 0;
+    return SizedBox.expand(
+      child: ColoredBox(
+        color: AppColors.background,
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isGo ? 'GO!' : '$count',
+                  style: TextStyle(
+                    fontSize: 120,
+                    fontWeight: FontWeight.w900,
+                    color: isGo ? AppColors.accent : AppColors.textPrimary,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  isGo ? 'Ride on!' : 'Get ready…',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 16,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -490,8 +593,9 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   }
 
   // ─── Screen 0: Data HUD ────────────────────────────────────────────────────
-  // Pure metrics display — no map. Intended for riders who want maximum
-  // readability without the visual complexity of a map underneath.
+  // Pure metrics display — no map. When the active HUD config has a grid
+  // layout (placements), metrics are rendered at their saved grid positions.
+  // Otherwise the classic primary/secondary column layout is used.
 
   Widget _buildDataPage() {
     return Container(
@@ -929,14 +1033,16 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          urlTemplate: mapTileUrl(_mapStyle),
           userAgentPackageName: 'com.example.bike_app',
         ),
         if (_routePoints.length >= 2)
           PolylineLayer(
             polylines: [
               Polyline(
-                points: _routePoints,
+                points: _routePoints.length >= 4
+                    ? catmullRomInterpolate(_routePoints, steps: 3)
+                    : _routePoints,
                 color: AppColors.accent,
                 strokeWidth: 4,
               ),
@@ -1195,6 +1301,32 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
                 letterSpacing: 1.2,
               ),
             ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1A237E),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            elevation: 8,
+            shadowColor: const Color(0xFF1A237E).withValues(alpha: 0.45),
+          ),
+          onPressed: _recordLap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.flag_rounded, size: 22),
+              const SizedBox(height: 2),
+              Text(
+                'LAP ${_laps.length + 1}',
+                style: const TextStyle(
+                    fontSize: 10, fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 12),
