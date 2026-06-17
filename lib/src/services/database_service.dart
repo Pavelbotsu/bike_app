@@ -19,10 +19,13 @@ class DatabaseService {
     final path = p.join(dir, 'velocity.db');
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE rides ADD COLUMN name TEXT');
+        }
+        if (oldVersion < 3) {
+          await db.execute('ALTER TABLE rides ADD COLUMN notes TEXT');
         }
       },
       onCreate: (db, _) async {
@@ -30,6 +33,7 @@ class DatabaseService {
           CREATE TABLE rides (
             id TEXT PRIMARY KEY,
             name TEXT,
+            notes TEXT,
             start_time INTEGER NOT NULL,
             end_time INTEGER NOT NULL,
             distance_km REAL NOT NULL,
@@ -66,6 +70,7 @@ class DatabaseService {
         {
           'id': ride.id,
           'name': ride.name,
+          'notes': ride.notes,
           'start_time': ride.startTime.millisecondsSinceEpoch,
           'end_time': ride.endTime.millisecondsSinceEpoch,
           'distance_km': ride.distanceKm,
@@ -149,9 +154,20 @@ class DatabaseService {
         .toList();
   }
 
+  Future<void> updateNotes(String id, String notes) async {
+    final database = await db;
+    await database.update(
+      'rides',
+      {'notes': notes},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Ride _rideFromRow(Map<String, dynamic> row, List<GpsPoint> points) => Ride(
         id: row['id'] as String,
         name: row['name'] as String?,
+        notes: row['notes'] as String?,
         startTime:
             DateTime.fromMillisecondsSinceEpoch(row['start_time'] as int),
         endTime: DateTime.fromMillisecondsSinceEpoch(row['end_time'] as int),

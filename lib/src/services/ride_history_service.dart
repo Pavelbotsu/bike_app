@@ -34,6 +34,12 @@ class RideHistoryService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateNotes(String id, String notes) async {
+    await _ensureMigrated();
+    await DatabaseService.instance.updateNotes(id, notes);
+    notifyListeners();
+  }
+
   Future<void> _ensureMigrated() async {
     if (_migrated) return;
     _migrated = true;

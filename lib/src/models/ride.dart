@@ -11,20 +11,25 @@ class Ride {
   /// start time (see [displayName]).
   final String? name;
 
+  /// Optional free-text note added after the ride.
+  final String? notes;
+
   const Ride({
     required this.id,
     required this.startTime,
     required this.endTime,
     required this.points,
     this.name,
+    this.notes,
   });
 
-  Ride copyWith({String? name}) => Ride(
+  Ride copyWith({String? name, String? notes}) => Ride(
         id: id,
         startTime: startTime,
         endTime: endTime,
         points: points,
         name: name ?? this.name,
+        notes: notes ?? this.notes,
       );
 
   /// Title shown in lists/summaries. Falls back to a time-of-day label
