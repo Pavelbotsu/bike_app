@@ -39,6 +39,12 @@ String fmtGrade(double pct) {
   return '$sign${pct.toStringAsFixed(1)}%';
 }
 
+/// Calories rounded to nearest integer.
+String fmtCalories(double kcal) {
+  if (kcal.isNaN || kcal.isInfinite || kcal < 0) return '0';
+  return kcal.round().toString();
+}
+
 /// Duration as `h:mm:ss` when there are hours, otherwise `mm:ss`.
 String fmtDuration(Duration d) {
   final h = d.inHours;

@@ -1,10 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/rounded_card.dart';
 import 'hud_settings_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+const _kWeightKey = 'prefs_weight_kg';
+
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  double _weightKg = 75.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _weightKg = prefs.getDouble(_kWeightKey) ?? 75.0;
+      });
+    }
+  }
+
+  Future<void> _editWeight() async {
+    final controller =
+        TextEditingController(text: _weightKg.round().toString());
+    final result = await showDialog<double>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Body weight'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            suffixText: 'kg',
+            hintText: '75',
+            hintStyle: const TextStyle(color: AppColors.textSecondary),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF2A2D3E)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.accent),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('CANCEL',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () {
+              final v = double.tryParse(controller.text.trim());
+              Navigator.of(context).pop(v);
+            },
+            child: const Text('SAVE',
+                style: TextStyle(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result > 0 && result < 300) {
+      setState(() => _weightKg = result);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_kWeightKey, result);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +107,15 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const HudSettingsScreen()),
             ),
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(label: 'RIDER'),
+          const SizedBox(height: 10),
+          _SettingsTile(
+            icon: Icons.monitor_weight_outlined,
+            label: 'Body weight',
+            subtitle: '${_weightKg.round()} kg  ·  used for calorie estimates',
+            onTap: _editWeight,
           ),
           const SizedBox(height: 24),
           _SectionHeader(label: 'ABOUT'),
