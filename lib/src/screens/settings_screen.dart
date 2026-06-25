@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
+import '../utils/map_tiles.dart';
 import '../widgets/rounded_card.dart';
 import 'hud_settings_screen.dart';
 
@@ -15,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   double _weightKg = 75.0;
+  MapStyle _mapStyle = MapStyle.standard;
 
   @override
   void initState() {
@@ -29,6 +31,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _weightKg = prefs.getDouble(_kWeightKey) ?? 75.0;
       });
     }
+    final style = await loadMapStyle();
+    if (mounted) setState(() => _mapStyle = style);
   }
 
   Future<void> _editWeight() async {
@@ -116,6 +120,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
             label: 'Body weight',
             subtitle: '${_weightKg.round()} kg  ·  used for calorie estimates',
             onTap: _editWeight,
+          ),
+          const SizedBox(height: 24),
+          _SectionHeader(label: 'MAP'),
+          const SizedBox(height: 10),
+          RoundedCard(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tile style',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                SegmentedButton<MapStyle>(
+                  style: SegmentedButton.styleFrom(
+                    backgroundColor: AppColors.background,
+                    selectedBackgroundColor: AppColors.accent,
+                    selectedForegroundColor: Colors.white,
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: Color(0xFF2A2D3E)),
+                  ),
+                  segments: MapStyle.values
+                      .map((s) => ButtonSegment<MapStyle>(
+                            value: s,
+                            label: Text(mapStyleLabel(s),
+                                style: const TextStyle(fontSize: 12)),
+                          ))
+                      .toList(),
+                  selected: {_mapStyle},
+                  onSelectionChanged: (sel) async {
+                    final style = sel.first;
+                    setState(() => _mapStyle = style);
+                    await saveMapStyle(style);
+                  },
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           _SectionHeader(label: 'ABOUT'),
