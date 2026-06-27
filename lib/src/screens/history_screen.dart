@@ -58,6 +58,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   double get _totalElevation =>
       _rides.fold(0.0, (s, r) => s + r.elevationGainM);
 
+  DateTime get _weekStart {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return today.subtract(Duration(days: today.weekday - 1));
+  }
+
+  List<Ride> get _thisWeekRides =>
+      _rides.where((r) => !r.startTime.isBefore(_weekStart)).toList();
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -71,6 +80,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
+            _buildWeekCard(),
+            const SizedBox(height: 10),
             _buildSummary(),
             const SizedBox(height: 16),
             if (_rides.isNotEmpty) _buildSearch(),
@@ -78,6 +89,52 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Expanded(child: _buildList()),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildWeekCard() {
+    final week = _thisWeekRides;
+    final km = week.fold(0.0, (s, r) => s + r.distanceKm);
+    final elev = week.fold(0.0, (s, r) => s + r.elevationGainM);
+    final time = week.fold(Duration.zero, (s, r) => s + r.movingDuration);
+    return RoundedCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'THIS WEEK',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryItem(
+                    label: 'RIDES', value: week.length.toString()),
+              ),
+              Expanded(
+                child: _SummaryItem(
+                    label: 'DISTANCE', value: '${fmtDistance(km)} km'),
+              ),
+              Expanded(
+                child: _SummaryItem(
+                    label: 'CLIMB',
+                    value: '${fmtElevation(elev)} m',
+                    color: AppColors.highlight),
+              ),
+              Expanded(
+                child: _SummaryItem(label: 'TIME', value: fmtDuration(time)),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
