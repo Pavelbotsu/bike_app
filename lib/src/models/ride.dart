@@ -1,5 +1,31 @@
+import 'dart:convert';
+
 import 'package:geolocator/geolocator.dart';
 import 'gps_point.dart';
+
+class LapSplit {
+  final Duration elapsed;
+  final double distanceKm;
+  const LapSplit({required this.elapsed, required this.distanceKm});
+
+  Map<String, dynamic> toJson() =>
+      {'ms': elapsed.inMilliseconds, 'km': distanceKm};
+
+  factory LapSplit.fromJson(Map<String, dynamic> j) => LapSplit(
+        elapsed: Duration(milliseconds: j['ms'] as int),
+        distanceKm: (j['km'] as num).toDouble(),
+      );
+
+  static String encodeList(List<LapSplit> laps) =>
+      jsonEncode(laps.map((l) => l.toJson()).toList());
+
+  static List<LapSplit> decodeList(String? json) {
+    if (json == null || json.isEmpty) return const [];
+    return (jsonDecode(json) as List<dynamic>)
+        .map((e) => LapSplit.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+}
 
 class Ride {
   final String id;
@@ -14,6 +40,8 @@ class Ride {
   /// Optional free-text note added after the ride.
   final String? notes;
 
+  final List<LapSplit> laps;
+
   const Ride({
     required this.id,
     required this.startTime,
@@ -21,15 +49,17 @@ class Ride {
     required this.points,
     this.name,
     this.notes,
+    this.laps = const [],
   });
 
-  Ride copyWith({String? name, String? notes}) => Ride(
+  Ride copyWith({String? name, String? notes, List<LapSplit>? laps}) => Ride(
         id: id,
         startTime: startTime,
         endTime: endTime,
         points: points,
         name: name ?? this.name,
         notes: notes ?? this.notes,
+        laps: laps ?? this.laps,
       );
 
   /// Title shown in lists/summaries. Falls back to a time-of-day label

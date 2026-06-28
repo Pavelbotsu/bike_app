@@ -2,6 +2,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import '../models/gps_point.dart';
 import '../models/ride.dart';
+// LapSplit encode/decode helpers are on the LapSplit class itself
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._();
@@ -19,13 +20,16 @@ class DatabaseService {
     final path = p.join(dir, 'velocity.db');
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE rides ADD COLUMN name TEXT');
         }
         if (oldVersion < 3) {
           await db.execute('ALTER TABLE rides ADD COLUMN notes TEXT');
+        }
+        if (oldVersion < 4) {
+          await db.execute('ALTER TABLE rides ADD COLUMN laps_json TEXT');
         }
       },
       onCreate: (db, _) async {
@@ -34,6 +38,7 @@ class DatabaseService {
             id TEXT PRIMARY KEY,
             name TEXT,
             notes TEXT,
+            laps_json TEXT,
             start_time INTEGER NOT NULL,
             end_time INTEGER NOT NULL,
             distance_km REAL NOT NULL,
@@ -71,6 +76,7 @@ class DatabaseService {
           'id': ride.id,
           'name': ride.name,
           'notes': ride.notes,
+          'laps_json': ride.laps.isEmpty ? null : LapSplit.encodeList(ride.laps),
           'start_time': ride.startTime.millisecondsSinceEpoch,
           'end_time': ride.endTime.millisecondsSinceEpoch,
           'distance_km': ride.distanceKm,
@@ -168,6 +174,7 @@ class DatabaseService {
         id: row['id'] as String,
         name: row['name'] as String?,
         notes: row['notes'] as String?,
+        laps: LapSplit.decodeList(row['laps_json'] as String?),
         startTime:
             DateTime.fromMillisecondsSinceEpoch(row['start_time'] as int),
         endTime: DateTime.fromMillisecondsSinceEpoch(row['end_time'] as int),
