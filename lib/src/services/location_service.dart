@@ -123,6 +123,16 @@ class LocationService {
     );
   }
 
+  /// Updates the text shown in the persistent "ride in progress" foreground
+  /// notification (Android only; no-op elsewhere).
+  Future<void> updateNotification(String text) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _kMethodChannel
+          .invokeMethod<void>('updateNotification', {'text': text});
+    } catch (_) {}
+  }
+
   void stop() {
     _isRunning = false;
 

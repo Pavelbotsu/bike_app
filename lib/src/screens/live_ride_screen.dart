@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../models/gps_point.dart';
 import '../models/hud_config.dart';
 import '../models/ride.dart';
+import '../services/active_ride_store.dart';
 import '../services/records_service.dart';
 import '../services/ride_tracking_service.dart';
 import '../services/ride_history_service.dart';
@@ -35,7 +36,11 @@ const _kMaxChartPoints = 300;
 ///
 /// The user can pin any screen as the default (saved to SharedPreferences).
 class RideRecordingScreen extends StatefulWidget {
-  const RideRecordingScreen({super.key});
+  /// When set, the screen skips the idle/countdown flow and resumes an
+  /// in-progress ride recovered from disk (e.g. after the app was killed).
+  final ActiveRideSnapshot? resumeSnapshot;
+
+  const RideRecordingScreen({super.key, this.resumeSnapshot});
 
   @override
   State<RideRecordingScreen> createState() => _RideRecordingScreenState();
@@ -66,6 +71,11 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   String? _error;
   DateTime? _startTime;
   final List<LatLng> _routePoints = [];
+
+  // Wall-clock offset applied when resuming a ride recovered from disk, so
+  // the elapsed timer continues from where it left off rather than 0.
+  Duration _elapsedOffset = Duration.zero;
+  DateTime? _lastPersistedAt;
 
   // Rolling buffer for display-only speed smoothing (5 samples ≈ 2.5 s)
   final List<double> _recentSpeeds = [];
@@ -103,6 +113,11 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     HudConfigService.instance.addListener(_loadHud);
     _loadFavScreen();
     loadMapStyle().then((s) { if (mounted) setState(() => _mapStyle = s); });
+    final resumeSnapshot = widget.resumeSnapshot;
+    if (resumeSnapshot != null) {
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _resumeRide(resumeSnapshot));
+    }
   }
 
   Future<void> _loadHud() async {
@@ -159,10 +174,72 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     WakelockPlus.enable();
     setState(() => _startTime = DateTime.now());
     _stopwatch.start();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _elapsed = _stopwatch.elapsed);
-    });
+    _startElapsedTimer();
     _listen();
+    _jumpToFavScreen();
+  }
+
+  /// Restores a ride recovered from disk (app was closed/killed mid-ride)
+  /// and continues recording from where it left off.
+  Future<void> _resumeRide(ActiveRideSnapshot snapshot) async {
+    setState(() => _error = null);
+    try {
+      await _trackingService.start(seed: snapshot.points);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+      return;
+    }
+    final recovered = Ride(
+      id: '',
+      startTime: snapshot.startTime,
+      endTime: DateTime.now(),
+      points: snapshot.points,
+      laps: snapshot.laps,
+    );
+    WakelockPlus.enable();
+    setState(() {
+      _startTime = snapshot.startTime;
+      _distanceKm = recovered.distanceKm;
+      _maxSpeedKmh = recovered.maxSpeedKmh;
+      _elevationGainM = recovered.elevationGainM;
+      _movingSeconds = recovered.movingDuration.inSeconds.toDouble();
+      _laps
+        ..clear()
+        ..addAll(snapshot.laps);
+      if (snapshot.points.isNotEmpty) {
+        _lastPosition = snapshot.points.last;
+        _accuracyM = _lastPosition!.accuracy;
+      }
+      for (final p in snapshot.points) {
+        _routePoints.add(LatLng(p.latitude, p.longitude));
+        final t = p.timestamp.difference(snapshot.startTime).inSeconds.toDouble();
+        _speedSpots.add(FlSpot(t, double.parse(p.speedKmh.toStringAsFixed(1))));
+        _altSpots.add(FlSpot(t, double.parse(p.altitude.toStringAsFixed(1))));
+      }
+      _elapsedOffset = DateTime.now().difference(snapshot.startTime);
+      _elapsed = _elapsedOffset;
+      _lapStartElapsed = _elapsedOffset;
+      _lapStartKm = _distanceKm;
+    });
+    _stopwatch.start();
+    _startElapsedTimer();
+    _listen();
+    _jumpToFavScreen();
+  }
+
+  void _startElapsedTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _elapsed = _elapsedOffset + _stopwatch.elapsed);
+      if (_elapsed.inSeconds % 5 == 0) {
+        _trackingService.updateNotification(
+          '${fmtDuration(_elapsed)} · ${fmtDistance(_distanceKm)} km',
+        );
+      }
+    });
+  }
+
+  void _jumpToFavScreen() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_favScreen != 0 && _pageController.hasClients) {
         _pageController.jumpToPage(_favScreen);
@@ -247,6 +324,27 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
         _mapController.move(newPoint, 15);
       } catch (_) {}
     }
+
+    _persistActiveRide();
+  }
+
+  /// Saves a snapshot of the in-progress ride so it can be recovered if the
+  /// app is closed before STOP is tapped. Throttled to avoid excessive disk
+  /// writes on every GPS sample.
+  void _persistActiveRide({bool force = false}) {
+    if (_startTime == null) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastPersistedAt != null &&
+        now.difference(_lastPersistedAt!) < const Duration(seconds: 5)) {
+      return;
+    }
+    _lastPersistedAt = now;
+    ActiveRideStore.save(
+      startTime: _startTime!,
+      points: _trackingService.points,
+      laps: _laps,
+    );
   }
 
   void _togglePause() {
@@ -279,6 +377,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       _lapStartElapsed = _elapsed;
       _lapStartKm = _distanceKm;
     });
+    _persistActiveRide(force: true);
   }
 
   Future<void> _stopRide() async {
@@ -289,6 +388,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     _stopwatch.stop();
 
     final baseRide = _trackingService.finish(_startTime!);
+    await ActiveRideStore.clear();
     final ride = _laps.isEmpty ? baseRide : baseRide.copyWith(laps: _laps);
     WakelockPlus.disable();
 

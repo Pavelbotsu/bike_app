@@ -26,6 +26,9 @@ class LocationForegroundService : Service() {
 
         // Shared with MainActivity to wire the EventChannel sink.
         val eventSinkRef = AtomicReference<EventChannel.EventSink?>()
+
+        // Shared with MainActivity so it can push live notification updates.
+        val instanceRef = AtomicReference<LocationForegroundService?>()
     }
 
     private lateinit var fusedClient: FusedLocationProviderClient
@@ -50,6 +53,7 @@ class LocationForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instanceRef.set(this)
         fusedClient = LocationServices.getFusedLocationProviderClient(this)
         createNotificationChannel()
     }
@@ -63,8 +67,16 @@ class LocationForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        instanceRef.set(null)
         fusedClient.removeLocationUpdates(locationCallback)
         super.onDestroy()
+    }
+
+    // Refreshes the ongoing notification with the current ride's elapsed
+    // time and distance, pushed live from the Dart side.
+    fun updateNotification(statusText: String) {
+        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        nm.notify(NOTIF_ID, buildNotification(statusText))
     }
 
     private fun requestLocationUpdates() {
@@ -79,7 +91,9 @@ class LocationForegroundService : Service() {
         }
     }
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(
+        statusText: String = "GPS active. Tap to return to your ride."
+    ): Notification {
         val openApp = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
@@ -89,7 +103,7 @@ class LocationForegroundService : Service() {
         )
         return NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
             .setContentTitle("Velocity — Ride in progress")
-            .setContentText("GPS active. Tap to return to your ride.")
+            .setContentText(statusText)
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

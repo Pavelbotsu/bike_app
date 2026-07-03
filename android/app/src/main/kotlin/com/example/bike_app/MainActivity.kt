@@ -48,6 +48,13 @@ class MainActivity : FlutterActivity() {
                         LocationForegroundService.eventSinkRef.set(null)
                         result.success(null)
                     }
+                    "updateNotification" -> {
+                        val text = call.argument<String>("text")
+                        if (text != null) {
+                            LocationForegroundService.instanceRef.get()?.updateNotification(text)
+                        }
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

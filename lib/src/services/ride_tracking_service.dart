@@ -13,14 +13,23 @@ class RideTrackingService {
 
   List<GpsPoint> get points => List.unmodifiable(_points);
 
-  Future<void> start() async {
-    _points.clear();
+  /// Starts GPS tracking. Pass [seed] to resume a ride recovered from disk
+  /// instead of starting with an empty point list.
+  Future<void> start({List<GpsPoint> seed = const []}) async {
+    _points
+      ..clear()
+      ..addAll(seed);
     _recording = true;
     await _locationService.start();
     _sub = _locationService.gpsPointStream.listen((GpsPoint point) {
       if (_recording) _points.add(point);
     });
   }
+
+  /// Updates the persistent "ride in progress" notification shown while the
+  /// foreground service is running (no-op on iOS).
+  void updateNotification(String text) =>
+      _locationService.updateNotification(text);
 
   void pause() => _recording = false;
 
