@@ -16,7 +16,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Velocity Bike App',
+      title: 'Velocity',
       theme: AppTheme.theme,
       home: const MainScaffold(),
     );

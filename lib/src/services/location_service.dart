@@ -9,8 +9,8 @@ enum LocationMode { economy, performance, highSpeed }
 const double _highSpeedThresholdMs = 20 / 3.6;
 const double _lowSpeedThresholdMs = 15 / 3.6;
 
-const _kMethodChannel = MethodChannel('com.example.bike_app/location');
-const _kEventChannel = EventChannel('com.example.bike_app/location_events');
+const _kMethodChannel = MethodChannel('com.pavelbotsu.velocity/location');
+const _kEventChannel = EventChannel('com.pavelbotsu.velocity/location_events');
 
 class LocationService {
   StreamController<GpsPoint> _gpsController =

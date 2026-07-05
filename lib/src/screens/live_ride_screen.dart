@@ -1134,7 +1134,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       children: [
         TileLayer(
           urlTemplate: mapTileUrl(_mapStyle),
-          userAgentPackageName: 'com.example.bike_app',
+          userAgentPackageName: 'com.pavelbotsu.velocity',
         ),
         if (_routePoints.length >= 2)
           PolylineLayer(

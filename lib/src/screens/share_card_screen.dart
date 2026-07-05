@@ -5,7 +5,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
+import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,6 +16,8 @@ import '../models/gps_point.dart';
 import '../models/ride.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/map_tiles.dart';
+import '../utils/path_interpolation.dart';
 
 // ─── Share stat enum ────────────────────────────────────────────────────────
 
@@ -51,7 +55,31 @@ extension ShareStatLabel on ShareStat {
 }
 
 const _kPrefStatKey = 'share_card_stats';
+const _kPrefBackgroundKey = 'share_card_background';
 const _kMaxStats = 4;
+
+// ─── Card background ────────────────────────────────────────────────────────
+
+/// What's drawn behind the route line and stats on the exported card.
+enum ShareCardBackground { solid, map, transparent }
+
+extension ShareCardBackgroundLabel on ShareCardBackground {
+  String get label {
+    switch (this) {
+      case ShareCardBackground.solid:       return 'BLACK';
+      case ShareCardBackground.map:         return 'MAP';
+      case ShareCardBackground.transparent: return 'TRANSPARENT';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case ShareCardBackground.solid:       return Icons.square_rounded;
+      case ShareCardBackground.map:         return Icons.map_rounded;
+      case ShareCardBackground.transparent: return Icons.check_box_outline_blank_rounded;
+    }
+  }
+}
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +104,7 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
   ];
   bool _sharing = false;
   bool _loadingLocation = true;
+  ShareCardBackground _background = ShareCardBackground.solid;
 
   Ride get ride => widget.ride;
 
@@ -83,7 +112,23 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
   void initState() {
     super.initState();
     _loadStatPrefs();
+    _loadBackgroundPref();
     _fetchLocation();
+  }
+
+  Future<void> _loadBackgroundPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_kPrefBackgroundKey);
+    if (saved == null || !mounted) return;
+    try {
+      setState(() => _background = ShareCardBackground.values.byName(saved));
+    } catch (_) {}
+  }
+
+  Future<void> _setBackground(ShareCardBackground bg) async {
+    setState(() => _background = bg);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPrefBackgroundKey, bg.name);
   }
 
   Future<void> _loadStatPrefs() async {
@@ -243,12 +288,49 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
             children: [
               // Card preview
               Center(
-                child: RepaintBoundary(
-                  key: _cardKey,
-                  child: _buildCard(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      if (_background == ShareCardBackground.transparent)
+                        const Positioned.fill(
+                          child: CustomPaint(painter: _CheckerboardPainter()),
+                        ),
+                      RepaintBoundary(
+                        key: _cardKey,
+                        child: _buildCard(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
+              // Background customisation
+              const Text(
+                'CARD BACKGROUND',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Map background needs a route · transparent exports as PNG with alpha',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    ShareCardBackground.values.map(_buildBackgroundChip).toList(),
+              ),
+              const SizedBox(height: 24),
               // Stat customisation
               const Text(
                 'STATS ON CARD',
@@ -321,6 +403,60 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
     );
   }
 
+  Widget _buildBackgroundChip(ShareCardBackground bg) {
+    final active = _background == bg;
+    final disabled = bg == ShareCardBackground.map && ride.points.length < 2;
+
+    return GestureDetector(
+      onTap: disabled ? null : () => _setBackground(bg),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: active
+              ? AppColors.accent.withValues(alpha: 0.18)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active
+                ? AppColors.accent
+                : disabled
+                    ? const Color(0xFF1E2030)
+                    : const Color(0xFF2A2D3E),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              bg.icon,
+              size: 14,
+              color: active
+                  ? AppColors.accent
+                  : disabled
+                      ? AppColors.textSecondary.withValues(alpha: 0.45)
+                      : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              bg.label,
+              style: TextStyle(
+                color: active
+                    ? AppColors.accent
+                    : disabled
+                        ? AppColors.textSecondary.withValues(alpha: 0.45)
+                        : AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ─── Share card widget ───────────────────────────────────────────────────────
 
   Widget _buildCard() {
@@ -338,13 +474,17 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
     final dateStr =
         '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
 
+    final transparent = _background == ShareCardBackground.transparent;
+
     return Container(
       width: cardWidth,
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: transparent ? Colors.transparent : AppColors.background,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: Colors.white.withValues(alpha: 0.06), width: 1),
+        border: transparent
+            ? null
+            : Border.all(
+                color: Colors.white.withValues(alpha: 0.06), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,15 +571,10 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
               child: Container(
                 height: cardWidth - cardPad * 2, // square canvas
                 width: double.infinity,
-                color: const Color(0xFF0D0E14),
-                child: pts.length >= 2
-                    ? CustomPaint(
-                        painter: _RoutePainter(points: pts),
-                      )
-                    : const Center(
-                        child: Icon(Icons.route_rounded,
-                            color: AppColors.textSecondary, size: 32),
-                      ),
+                color: _background == ShareCardBackground.map
+                    ? null
+                    : (transparent ? Colors.transparent : const Color(0xFF0D0E14)),
+                child: _buildRoutePanel(pts),
               ),
             ),
           ),
@@ -461,6 +596,75 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
       ),
     );
   }
+
+  /// Route thumbnail content: flat-colour custom-painted line (solid /
+  /// transparent backgrounds) or a real tiled map (map background).
+  Widget _buildRoutePanel(List<GpsPoint> pts) {
+    if (pts.length < 2) {
+      return const Center(
+        child: Icon(Icons.route_rounded,
+            color: AppColors.textSecondary, size: 32),
+      );
+    }
+    if (_background == ShareCardBackground.map) {
+      return _buildRouteMap(pts);
+    }
+    return CustomPaint(painter: _RoutePainter(points: pts));
+  }
+
+  Widget _buildRouteMap(List<GpsPoint> pts) {
+    final latLngs = pts.map((p) => LatLng(p.latitude, p.longitude)).toList();
+    final smoothed = catmullRomInterpolate(latLngs, steps: 4);
+    return IgnorePointer(
+      child: FlutterMap(
+        options: MapOptions(
+          initialCameraFit: CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints(latLngs),
+            padding: const EdgeInsets.all(16),
+          ),
+          interactionOptions:
+              const InteractionOptions(flags: InteractiveFlag.none),
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: mapTileUrl(MapStyle.standard),
+            userAgentPackageName: 'com.pavelbotsu.velocity',
+          ),
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: smoothed,
+                color: AppColors.accent,
+                strokeWidth: 3.5,
+              ),
+            ],
+          ),
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: latLngs.first,
+                child: _routeDot(const Color(0xFF3BD5AC)),
+              ),
+              Marker(
+                point: latLngs.last,
+                child: _routeDot(Colors.redAccent),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _routeDot(Color color) => Container(
+        width: 9,
+        height: 9,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 1.5),
+        ),
+      );
 
   Widget _buildStatTile(ShareStat stat) {
     return Container(
@@ -509,6 +713,35 @@ class _ShareCardScreenState extends State<ShareCardScreen> {
     final ratio = pts.length / max;
     return List.generate(max, (i) => pts[(i * ratio).floor()]);
   }
+}
+
+// ─── Checkerboard backdrop ────────────────────────────────────────────────────
+// Preview-only affordance so a "transparent" card reads as transparent
+// against the app's dark screen background. Painted behind the
+// RepaintBoundary, so it never ends up in the exported PNG.
+
+class _CheckerboardPainter extends CustomPainter {
+  const _CheckerboardPainter();
+
+  static const _cell = 10.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final light = Paint()..color = const Color(0xFF2A2D3E);
+    final dark = Paint()..color = const Color(0xFF15161F);
+    for (double y = 0; y < size.height; y += _cell) {
+      for (double x = 0; x < size.width; x += _cell) {
+        final isDark = ((x / _cell).floor() + (y / _cell).floor()).isEven;
+        canvas.drawRect(
+          Rect.fromLTWH(x, y, _cell, _cell),
+          isDark ? dark : light,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CheckerboardPainter old) => false;
 }
 
 // ─── Route painter ───────────────────────────────────────────────────────────

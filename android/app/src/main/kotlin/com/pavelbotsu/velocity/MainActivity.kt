@@ -1,4 +1,4 @@
-package com.example.bike_app
+package com.pavelbotsu.velocity
 
 import android.Manifest
 import android.content.Intent
@@ -12,8 +12,8 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    private val methodChannelName = "com.example.bike_app/location"
-    private val eventChannelName  = "com.example.bike_app/location_events"
+    private val methodChannelName = "com.pavelbotsu.velocity/location"
+    private val eventChannelName  = "com.pavelbotsu.velocity/location_events"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

@@ -507,7 +507,7 @@ class _PostRideScreenState extends State<PostRideScreen> {
               children: [
                 TileLayer(
                   urlTemplate: mapTileUrl(_mapStyle),
-                  userAgentPackageName: 'com.example.bike_app',
+                  userAgentPackageName: 'com.pavelbotsu.velocity',
                 ),
                 PolylineLayer(polylines: polylines),
                 MarkerLayer(

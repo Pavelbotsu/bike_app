@@ -1,4 +1,4 @@
-package com.example.bike_app
+package com.pavelbotsu.velocity
 
 import android.app.Notification
 import android.app.NotificationChannel
