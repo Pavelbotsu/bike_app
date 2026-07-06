@@ -14,6 +14,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/map_tiles.dart';
 import '../utils/path_interpolation.dart';
+import '../utils/ride_stats.dart';
 import '../widgets/rounded_card.dart';
 import 'share_card_screen.dart';
 
@@ -40,11 +41,16 @@ class _PostRideScreenState extends State<PostRideScreen> {
   late String? _notes = widget.ride.notes;
   double _weightKg = 75.0;
   MapStyle _mapStyle = MapStyle.standard;
+  List<Ride> _priorRides = const [];
 
   Ride get ride => widget.ride;
 
   double get _calories =>
       8.0 * _weightKg * ride.movingDuration.inSeconds / 3600;
+
+  List<GradeBucket> get _gradeBuckets => gradeHistogram(ride);
+
+  EffortResult get _effort => effortScore(ride, _priorRides);
 
   @override
   void initState() {
@@ -56,6 +62,13 @@ class _PostRideScreenState extends State<PostRideScreen> {
       }
     });
     loadMapStyle().then((s) { if (mounted) setState(() => _mapStyle = s); });
+    RideHistoryService.instance.loadRides().then((rides) {
+      if (mounted) {
+        setState(() {
+          _priorRides = rides.where((r) => r.id != ride.id).toList();
+        });
+      }
+    });
   }
 
   @override
@@ -110,11 +123,17 @@ class _PostRideScreenState extends State<PostRideScreen> {
                       const SizedBox(height: 16),
                     ],
                     _buildStatsCard(),
+                    if (ride.points.length >= 2) ...[
+                      const SizedBox(height: 16),
+                      _buildEffortCard(),
+                    ],
                     const SizedBox(height: 10),
                     _buildNotesCard(),
                     const SizedBox(height: 16),
                     if (_hasElevationData) ...[
                       _buildAnalysisCard(),
+                      const SizedBox(height: 16),
+                      _buildGradeHistogramCard(),
                       const SizedBox(height: 16),
                     ],
                     _buildTimesCard(),
@@ -680,6 +699,68 @@ class _PostRideScreenState extends State<PostRideScreen> {
     );
   }
 
+  Widget _buildEffortCard() {
+    final effort = _effort;
+    return RoundedCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'EFFORT SCORE',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${effort.score}',
+                style: const TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.accent,
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.only(left: 10, bottom: 8),
+                child: Text(
+                  '100 = a typical ride\nfor you',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _StatCol(
+                  label: 'ELEV-ADJUSTED DIST',
+                  value: '${fmtDistance(effort.elevAdjKm)} km',
+                ),
+              ),
+              Expanded(
+                child: _StatCol(
+                  label: 'INTENSITY',
+                  value: '${effort.intensity.toStringAsFixed(2)}×',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAnalysisCard() {
     return RoundedCard(
       padding: const EdgeInsets.all(20),
@@ -728,6 +809,142 @@ class _PostRideScreenState extends State<PostRideScreen> {
                   value: fmtDuration(ride.movingDuration),
                 ),
               ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const List<Color> _gradeBucketColors = [
+    Color(0xFF1E88E5), // steep down
+    Color(0xFF64B5F6), // down
+    AppColors.textSecondary, // flat
+    AppColors.accent, // up
+    Color(0xFFE53935), // steep up
+  ];
+
+  Widget _buildGradeHistogramCard() {
+    final buckets = _gradeBuckets;
+    final maxY = buckets
+        .map((b) => b.distanceKm)
+        .fold<double>(0, (max, v) => v > max ? v : max);
+    if (maxY <= 0) return const SizedBox.shrink();
+
+    return RoundedCard(
+      padding: const EdgeInsets.fromLTRB(12, 20, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Text(
+              'GRADE DISTRIBUTION',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                letterSpacing: 1.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 150,
+            child: BarChart(
+              BarChartData(
+                maxY: maxY * 1.2,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => const Color(0xFF1E2030),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                        BarTooltipItem(
+                      '${buckets[group.x].label}\n${fmtDistance(rod.toY)} km',
+                      const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                barGroups: [
+                  for (int i = 0; i < buckets.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: buckets[i].distanceKm,
+                          color: _gradeBucketColors[i],
+                          width: 26,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ],
+                    ),
+                ],
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) => const FlLine(
+                    color: Color(0xFF1E2030),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 36,
+                      getTitlesWidget: (v, _) => Text(
+                        v.toStringAsFixed(0),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 14,
+            runSpacing: 8,
+            children: [
+              for (int i = 0; i < buckets.length; i++)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _gradeBucketColors[i],
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      buckets[i].label,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 10,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ],
