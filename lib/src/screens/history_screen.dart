@@ -1,8 +1,10 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../models/ride.dart';
 import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../utils/ride_stats.dart';
 import '../widgets/rounded_card.dart';
 import 'post_ride_screen.dart';
 
@@ -81,6 +83,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
             const SizedBox(height: 16),
             _buildWeekCard(),
+            if (_rides.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _buildWeeklyVolumeCard(),
+            ],
             const SizedBox(height: 10),
             _buildSummary(),
             const SizedBox(height: 16),
@@ -98,19 +104,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final km = week.fold(0.0, (s, r) => s + r.distanceKm);
     final elev = week.fold(0.0, (s, r) => s + r.elevationGainM);
     final time = week.fold(Duration.zero, (s, r) => s + r.movingDuration);
+    final streak = currentWeeklyStreak(_rides);
     return RoundedCard(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'THIS WEEK',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.4,
-            ),
+          Row(
+            children: [
+              const Text(
+                'THIS WEEK',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.4,
+                ),
+              ),
+              const Spacer(),
+              _buildStreakChip(streak),
+            ],
           ),
           const SizedBox(height: 10),
           Row(
@@ -133,6 +146,145 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: _SummaryItem(label: 'TIME', value: fmtDuration(time)),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStreakChip(int streak) {
+    final active = streak > 0;
+    final color = active ? AppColors.accent : AppColors.textSecondary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.local_fire_department, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            '$streak wk streak',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyVolumeCard() {
+    const weeks = 10;
+    final volumes = weeklyDistanceKm(_rides, weeks: weeks);
+    final maxY = volumes
+        .map((w) => w.distanceKm)
+        .fold<double>(0, (max, v) => v > max ? v : max);
+
+    return RoundedCard(
+      padding: const EdgeInsets.fromLTRB(12, 20, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Text(
+              'WEEKLY VOLUME',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                letterSpacing: 1.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 140,
+            child: BarChart(
+              BarChartData(
+                maxY: maxY <= 0 ? 1 : maxY * 1.2,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => const Color(0xFF1E2030),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final week = volumes[group.x];
+                      return BarTooltipItem(
+                        '${_fmtDate(week.weekStart)}\n${fmtDistance(rod.toY)} km',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                barGroups: [
+                  for (int i = 0; i < volumes.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: volumes[i].distanceKm,
+                          color: AppColors.accent,
+                          width: 14,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    ),
+                ],
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  getDrawingHorizontalLine: (_) => const FlLine(
+                    color: Color(0xFF1E2030),
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 36,
+                      getTitlesWidget: (v, _) => Text(
+                        v.toStringAsFixed(0),
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              'Last $weeks weeks · km per week',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 10,
+                letterSpacing: 0.6,
+              ),
+            ),
           ),
         ],
       ),

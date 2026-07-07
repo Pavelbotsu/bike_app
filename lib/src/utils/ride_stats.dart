@@ -109,3 +109,76 @@ double _median(List<double> sorted) {
   final mid = n ~/ 2;
   return n.isOdd ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
+
+/// Monday 00:00 (local) of the week containing [date] — the same week
+/// definition already used by HistoryScreen's "this week" summary.
+DateTime _mondayOf(DateTime date) {
+  final day = DateTime(date.year, date.month, date.day);
+  return day.subtract(Duration(days: day.weekday - 1));
+}
+
+/// Total ride distance for one Monday-start week.
+class WeekVolume {
+  final DateTime weekStart;
+  final double distanceKm;
+  const WeekVolume(this.weekStart, this.distanceKm);
+}
+
+/// Buckets ride distance into Monday-start weeks, oldest to newest, for the
+/// last [weeks] weeks including the current (possibly partial) week.
+List<WeekVolume> weeklyDistanceKm(List<Ride> rides, {int weeks = 10}) {
+  final thisMonday = _mondayOf(DateTime.now());
+  final mondays = [
+    for (int i = weeks - 1; i >= 0; i--)
+      thisMonday.subtract(Duration(days: 7 * i)),
+  ];
+  final totals = {for (final m in mondays) m: 0.0};
+  for (final ride in rides) {
+    final monday = _mondayOf(ride.startTime);
+    final total = totals[monday];
+    if (total != null) totals[monday] = total + ride.distanceKm;
+  }
+  return [for (final m in mondays) WeekVolume(m, totals[m]!)];
+}
+
+Set<DateTime> _weeksWithRides(List<Ride> rides) =>
+    rides.map((r) => _mondayOf(r.startTime)).toSet();
+
+/// Consecutive Monday-start weeks with >=1 ride, counting back from the
+/// current week. If the current week has no ride yet but last week does,
+/// counting starts from last week so the streak doesn't read as broken
+/// mid-week.
+int currentWeeklyStreak(List<Ride> rides) {
+  if (rides.isEmpty) return 0;
+  final weeks = _weeksWithRides(rides);
+  var cursor = _mondayOf(DateTime.now());
+  if (!weeks.contains(cursor)) {
+    final lastWeek = cursor.subtract(const Duration(days: 7));
+    if (!weeks.contains(lastWeek)) return 0;
+    cursor = lastWeek;
+  }
+  var streak = 0;
+  while (weeks.contains(cursor)) {
+    streak++;
+    cursor = cursor.subtract(const Duration(days: 7));
+  }
+  return streak;
+}
+
+/// Longest run of consecutive Monday-start weeks with >=1 ride, anywhere in
+/// the rider's history. Reused by the achievements screen.
+int longestWeeklyStreak(List<Ride> rides) {
+  if (rides.isEmpty) return 0;
+  final weeks = _weeksWithRides(rides).toList()..sort();
+  var longest = 1;
+  var current = 1;
+  for (int i = 1; i < weeks.length; i++) {
+    if (weeks[i].difference(weeks[i - 1]).inDays == 7) {
+      current++;
+    } else {
+      current = 1;
+    }
+    if (current > longest) longest = current;
+  }
+  return longest;
+}
