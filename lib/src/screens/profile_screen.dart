@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/achievement.dart';
 import '../models/ride.dart';
 import '../services/ride_history_service.dart';
 import '../theme/app_theme.dart';
@@ -52,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,12 +62,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             _buildLifetimeMetricsCard(),
             const SizedBox(height: 24),
+            _buildAchievementsGrid(),
+            const SizedBox(height: 24),
             const Text(
               'RECENT ACTIVITY',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
-            Expanded(child: _buildHistory()),
+            _buildHistory(),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -177,6 +181,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final recent = _rides.take(5).toList();
     return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: recent.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, i) => _RideTile(
@@ -187,6 +193,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAchievementsGrid() {
+    final stats = RiderStats.fromRides(_rides);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'ACHIEVEMENTS',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 0.9,
+          children: [
+            for (final achievement in kAchievements)
+              _AchievementTile(
+                achievement: achievement,
+                unlocked: achievement.isUnlocked(stats),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -312,6 +347,81 @@ class _MetricRow extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700, color: valueColor),
         ),
       ],
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  final Achievement achievement;
+  final bool unlocked;
+
+  const _AchievementTile({required this.achievement, required this.unlocked});
+
+  void _showDetail(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: Text('${achievement.emoji}  ${achievement.title}'),
+        content: Text(
+          unlocked
+              ? achievement.description
+              : '${achievement.description}\n\nNot yet unlocked.',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child:
+                const Text('CLOSE', style: TextStyle(color: AppColors.accent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showDetail(context),
+      child: RoundedCard(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        child: Opacity(
+          opacity: unlocked ? 1.0 : 0.35,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(achievement.emoji, style: const TextStyle(fontSize: 30)),
+                  if (!unlocked)
+                    const Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: Icon(Icons.lock,
+                          size: 14, color: AppColors.textSecondary),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                achievement.title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: unlocked
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
