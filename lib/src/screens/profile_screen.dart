@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/rounded_card.dart';
 import 'post_ride_screen.dart';
+import 'routes_list_screen.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -63,6 +64,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildLifetimeMetricsCard(),
             const SizedBox(height: 24),
             _buildAchievementsGrid(),
+            const SizedBox(height: 24),
+            _buildRoutesEntry(context),
             const SizedBox(height: 24),
             const Text(
               'RECENT ACTIVITY',
@@ -222,6 +225,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildRoutesEntry(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RoutesListScreen()),
+      ),
+      child: RoundedCard(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.highlight.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.route,
+                  color: AppColors.highlight, size: 20),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Text(
+                'My Routes',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
+            ),
+            const Icon(Icons.chevron_right,
+                color: AppColors.textSecondary, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
