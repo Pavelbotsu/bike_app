@@ -418,7 +418,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
 
     final baseRide = _trackingService.finish(_startTime!);
     await ActiveRideStore.clear();
-    final ride = _laps.isEmpty ? baseRide : baseRide.copyWith(laps: _laps);
+    final ride = baseRide.copyWith(laps: _laps, routeId: _selectedRoute?.id);
     WakelockPlus.disable();
 
     bool save = true;

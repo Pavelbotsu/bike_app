@@ -6,10 +6,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/bike_route.dart';
 import '../models/gps_point.dart';
 import '../models/ride.dart';
 import '../services/export_service.dart';
 import '../services/ride_history_service.dart';
+import '../services/route_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../utils/map_tiles.dart';
@@ -42,6 +44,8 @@ class _PostRideScreenState extends State<PostRideScreen> {
   double _weightKg = 75.0;
   MapStyle _mapStyle = MapStyle.standard;
   List<Ride> _priorRides = const [];
+  List<Ride> _routeRides = const [];
+  BikeRoute? _routeInfo;
 
   Ride get ride => widget.ride;
 
@@ -51,6 +55,10 @@ class _PostRideScreenState extends State<PostRideScreen> {
   List<GradeBucket> get _gradeBuckets => gradeHistogram(ride);
 
   EffortResult get _effort => effortScore(ride, _priorRides);
+
+  Ride? get _routeBest => fastestRide(_routeRides);
+
+  double? get _routeBestAvgSpeedKmh => bestAvgMovingSpeedKmh(_routeRides);
 
   @override
   void initState() {
@@ -69,6 +77,22 @@ class _PostRideScreenState extends State<PostRideScreen> {
         });
       }
     });
+    final routeId = ride.routeId;
+    if (routeId != null) {
+      RideHistoryService.instance.loadRidesForRoute(routeId).then((rides) {
+        if (mounted) {
+          setState(() {
+            _routeRides = rides.where((r) => r.id != ride.id).toList();
+          });
+        }
+      });
+      RouteService.instance.loadRouteWithPoints(routeId).then((route) {
+        if (mounted) setState(() => _routeInfo = route);
+      }).catchError((Object _) {
+        // Route may have been deleted since this ride was tagged — the
+        // comparison card still works without the route's name.
+      });
+    }
   }
 
   @override
@@ -114,6 +138,10 @@ class _PostRideScreenState extends State<PostRideScreen> {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (ride.routeId != null) ...[
+                      _buildRouteComparisonCard(),
                       const SizedBox(height: 16),
                     ],
                     _buildMap(),
@@ -694,6 +722,105 @@ class _PostRideScreenState extends State<PostRideScreen> {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  String _fmtDeltaDuration(Duration d) {
+    final sign = d.isNegative ? '-' : '+';
+    return '$sign${fmtDuration(d.abs())}';
+  }
+
+  Widget _buildRouteComparisonCard() {
+    final best = _routeBest;
+    final bestAvgSpeed = _routeBestAvgSpeedKmh;
+    final isNewBest = best != null && ride.duration < best.duration;
+
+    return RoundedCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'ROUTE COMPARISON',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  letterSpacing: 1.6,
+                ),
+              ),
+              if (_routeInfo != null) ...[
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    _routeInfo!.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: AppColors.highlight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (best == null)
+            const Text(
+              'First ride on this route — this sets the benchmark.',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            )
+          else ...[
+            Row(
+              children: [
+                Icon(
+                  isNewBest ? Icons.emoji_events : Icons.timer_outlined,
+                  color:
+                      isNewBest ? const Color(0xFFFFB300) : AppColors.textSecondary,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    isNewBest
+                        ? 'New personal best on this route!'
+                        : '${_fmtDeltaDuration(ride.duration - best.duration)} vs your best (${fmtDuration(best.duration)})',
+                    style: TextStyle(
+                      color: isNewBest
+                          ? const Color(0xFFFFB300)
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCol(
+                    label: 'YOUR BEST TIME',
+                    value: fmtDuration(best.duration),
+                  ),
+                ),
+                Expanded(
+                  child: _StatCol(
+                    label: 'BEST AVG SPEED',
+                    value: '${fmtSpeed(bestAvgSpeed ?? 0)} km/h',
+                    color: AppColors.accent,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

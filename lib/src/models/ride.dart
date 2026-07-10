@@ -42,6 +42,10 @@ class Ride {
 
   final List<LapSplit> laps;
 
+  /// Id of the [BikeRoute] this ride followed, if the rider picked one to
+  /// follow before starting. Null for untagged rides.
+  final String? routeId;
+
   const Ride({
     required this.id,
     required this.startTime,
@@ -50,9 +54,16 @@ class Ride {
     this.name,
     this.notes,
     this.laps = const [],
+    this.routeId,
   });
 
-  Ride copyWith({String? name, String? notes, List<LapSplit>? laps}) => Ride(
+  Ride copyWith({
+    String? name,
+    String? notes,
+    List<LapSplit>? laps,
+    String? routeId,
+  }) =>
+      Ride(
         id: id,
         startTime: startTime,
         endTime: endTime,
@@ -60,6 +71,7 @@ class Ride {
         name: name ?? this.name,
         notes: notes ?? this.notes,
         laps: laps ?? this.laps,
+        routeId: routeId ?? this.routeId,
       );
 
   /// Title shown in lists/summaries. Falls back to a time-of-day label

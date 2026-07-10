@@ -1,6 +1,19 @@
 import 'package:geolocator/geolocator.dart';
 import '../models/ride.dart';
 
+/// The ride with the shortest total duration in [rides], or null if empty.
+/// Used to find a rider's personal-best time on a given route.
+Ride? fastestRide(List<Ride> rides) {
+  if (rides.isEmpty) return null;
+  return rides.reduce((a, b) => a.duration < b.duration ? a : b);
+}
+
+/// The best (highest) average moving speed among [rides], or null if empty.
+double? bestAvgMovingSpeedKmh(List<Ride> rides) {
+  if (rides.isEmpty) return null;
+  return rides.map((r) => r.avgMovingSpeedKmh).reduce((a, b) => a > b ? a : b);
+}
+
 /// One bucket of a distance-weighted grade histogram.
 class GradeBucket {
   final String label;

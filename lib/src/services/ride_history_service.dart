@@ -22,6 +22,11 @@ class RideHistoryService extends ChangeNotifier {
     return DatabaseService.instance.loadRides();
   }
 
+  Future<List<Ride>> loadRidesForRoute(String routeId) async {
+    await _ensureMigrated();
+    return DatabaseService.instance.loadRidesForRoute(routeId);
+  }
+
   Future<void> deleteRide(String id) async {
     await _ensureMigrated();
     await DatabaseService.instance.deleteRide(id);

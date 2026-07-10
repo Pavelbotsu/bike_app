@@ -22,7 +22,7 @@ class DatabaseService {
     final path = p.join(dir, 'velocity.db');
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await db.execute('ALTER TABLE rides ADD COLUMN name TEXT');
@@ -38,6 +38,9 @@ class DatabaseService {
           await db.execute(_createRoutePointsTableSql);
           await db.execute(_createRoutePointsIndexSql);
         }
+        if (oldVersion < 6) {
+          await db.execute('ALTER TABLE rides ADD COLUMN route_id TEXT');
+        }
       },
       onCreate: (db, _) async {
         await db.execute('''
@@ -46,6 +49,7 @@ class DatabaseService {
             name TEXT,
             notes TEXT,
             laps_json TEXT,
+            route_id TEXT,
             start_time INTEGER NOT NULL,
             end_time INTEGER NOT NULL,
             distance_km REAL NOT NULL,
@@ -110,6 +114,7 @@ class DatabaseService {
           'name': ride.name,
           'notes': ride.notes,
           'laps_json': ride.laps.isEmpty ? null : LapSplit.encodeList(ride.laps),
+          'route_id': ride.routeId,
           'start_time': ride.startTime.millisecondsSinceEpoch,
           'end_time': ride.endTime.millisecondsSinceEpoch,
           'distance_km': ride.distanceKm,
@@ -208,11 +213,28 @@ class DatabaseService {
         name: row['name'] as String?,
         notes: row['notes'] as String?,
         laps: LapSplit.decodeList(row['laps_json'] as String?),
+        routeId: row['route_id'] as String?,
         startTime:
             DateTime.fromMillisecondsSinceEpoch(row['start_time'] as int),
         endTime: DateTime.fromMillisecondsSinceEpoch(row['end_time'] as int),
         points: points,
       );
+
+  Future<List<Ride>> loadRidesForRoute(String routeId) async {
+    final database = await db;
+    final rows = await database.query(
+      'rides',
+      where: 'route_id = ?',
+      whereArgs: [routeId],
+      orderBy: 'start_time DESC',
+    );
+    final rides = <Ride>[];
+    for (final row in rows) {
+      final points = await _loadPoints(database, row['id'] as String);
+      rides.add(_rideFromRow(row, points));
+    }
+    return rides;
+  }
 
   Future<void> saveRoute(BikeRoute route) async {
     final database = await db;
