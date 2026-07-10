@@ -9,11 +9,13 @@ class ActiveRideSnapshot {
   final DateTime startTime;
   final List<GpsPoint> points;
   final List<LapSplit> laps;
+  final String? routeId;
 
   const ActiveRideSnapshot({
     required this.startTime,
     required this.points,
     required this.laps,
+    this.routeId,
   });
 }
 
@@ -28,6 +30,7 @@ class ActiveRideStore {
     required DateTime startTime,
     required List<GpsPoint> points,
     required List<LapSplit> laps,
+    String? routeId,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
@@ -36,6 +39,7 @@ class ActiveRideStore {
         'startTime': startTime.millisecondsSinceEpoch,
         'points': points.map((p) => p.toJson()).toList(),
         'laps': laps.map((l) => l.toJson()).toList(),
+        'routeId': routeId,
       }),
     );
   }
@@ -58,6 +62,7 @@ class ActiveRideStore {
             DateTime.fromMillisecondsSinceEpoch(json['startTime'] as int),
         points: points,
         laps: laps,
+        routeId: json['routeId'] as String?,
       );
     } catch (_) {
       return null;

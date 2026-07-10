@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import '../models/bike_route.dart';
 import '../models/gps_point.dart';
 import '../models/hud_config.dart';
 import '../models/ride.dart';
@@ -15,6 +16,8 @@ import '../services/active_ride_store.dart';
 import '../services/records_service.dart';
 import '../services/ride_tracking_service.dart';
 import '../services/ride_history_service.dart';
+import '../services/route_service.dart';
+import '../utils/geo_utils.dart';
 import '../utils/map_tiles.dart';
 import '../utils/path_interpolation.dart';
 import '../theme/app_theme.dart';
@@ -71,6 +74,11 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
   String? _error;
   DateTime? _startTime;
   final List<LatLng> _routePoints = [];
+
+  // Route-following (Phase 6)
+  BikeRoute? _selectedRoute;
+  double? _offRouteMeters;
+  bool? _onRoute;
 
   // Wall-clock offset applied when resuming a ride recovered from disk, so
   // the elapsed timer continues from where it left off rather than 0.
@@ -189,6 +197,15 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       if (mounted) setState(() => _error = e.toString());
       return;
     }
+    final routeId = snapshot.routeId;
+    BikeRoute? restoredRoute;
+    if (routeId != null) {
+      try {
+        restoredRoute = await RouteService.instance.loadRouteWithPoints(routeId);
+      } catch (_) {
+        // Route may have been deleted since the crash — resume without it.
+      }
+    }
     final recovered = Ride(
       id: '',
       startTime: snapshot.startTime,
@@ -198,6 +215,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
     );
     WakelockPlus.enable();
     setState(() {
+      _selectedRoute = restoredRoute;
       _startTime = snapshot.startTime;
       _distanceKm = recovered.distanceKm;
       _maxSpeedKmh = recovered.maxSpeedKmh;
@@ -295,6 +313,16 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       if (pos.speedKmh > _maxSpeedKmh) _maxSpeedKmh = pos.speedKmh;
       _routePoints.add(newPoint);
 
+      // Off-route detection (hysteresis avoids flicker from GPS jitter near
+      // the 30 m nominal threshold: leaves "on route" only past 35 m, comes
+      // back only once within 25 m).
+      final route = _selectedRoute;
+      if (route != null && route.waypoints.length >= 2) {
+        final dist = distanceToPolylineMeters(newPoint, route.waypoints);
+        _offRouteMeters = dist;
+        _onRoute = updateOnRouteState(current: _onRoute, distanceMeters: dist);
+      }
+
       // Auto-pause / auto-resume
       if (!_paused) {
         if (pos.speedKmh < 1.5) {
@@ -344,6 +372,7 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
       startTime: _startTime!,
       points: _trackingService.points,
       laps: _laps,
+      routeId: _selectedRoute?.id,
     );
   }
 
@@ -614,6 +643,8 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
                   const SizedBox(height: 20),
                   _ErrorBox(message: _error!),
                 ],
+                const SizedBox(height: 16),
+                _buildRouteSelector(),
                 const Spacer(),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
@@ -642,6 +673,126 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildRouteSelector() {
+    final route = _selectedRoute;
+    return Material(
+      color: Colors.white.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: _pickRoute,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.route,
+                  color: route != null
+                      ? AppColors.highlight
+                      : AppColors.textSecondary,
+                  size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  route != null ? route.name : 'Follow a route (optional)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: route != null
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              if (route != null)
+                GestureDetector(
+                  onTap: () => setState(() {
+                    _selectedRoute = null;
+                    _onRoute = null;
+                    _offRouteMeters = null;
+                  }),
+                  child: const Icon(Icons.close,
+                      color: AppColors.textSecondary, size: 18),
+                )
+              else
+                const Icon(Icons.chevron_right,
+                    color: AppColors.textSecondary, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickRoute() async {
+    final routes = await RouteService.instance.loadRoutes();
+    if (!mounted) return;
+    if (routes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No saved routes yet — draw one from Profile > My Routes.'),
+        ),
+      );
+      return;
+    }
+    final picked = await showModalBottomSheet<BikeRoute>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'FOLLOW A ROUTE',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                  letterSpacing: 1.4,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: routes.length,
+                itemBuilder: (context, i) {
+                  final r = routes[i];
+                  return ListTile(
+                    leading: const Icon(Icons.route, color: AppColors.highlight),
+                    title: Text(r.name,
+                        style: const TextStyle(color: AppColors.textPrimary)),
+                    subtitle: Text(
+                      '${r.waypoints.length} waypoints  ·  ${fmtDistance(r.distanceKm)} km',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                    onTap: () => Navigator.of(context).pop(r),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final withPoints = await RouteService.instance.loadRouteWithPoints(picked.id);
+    if (mounted) {
+      setState(() {
+        _selectedRoute = withPoints;
+        _onRoute = null;
+        _offRouteMeters = null;
+      });
+    }
   }
 
   // ─── Riding: swipeable PageView ────────────────────────────────────────────
@@ -1136,6 +1287,18 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
           urlTemplate: mapTileUrl(_mapStyle),
           userAgentPackageName: 'com.pavelbotsu.velocity',
         ),
+        if (_selectedRoute != null && _selectedRoute!.waypoints.length >= 2)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: _selectedRoute!.waypoints.length >= 4
+                    ? catmullRomInterpolate(_selectedRoute!.waypoints, steps: 3)
+                    : _selectedRoute!.waypoints,
+                color: AppColors.textSecondary.withValues(alpha: 0.55),
+                strokeWidth: 3,
+              ),
+            ],
+          ),
         if (_routePoints.length >= 2)
           PolylineLayer(
             polylines: [
@@ -1192,6 +1355,17 @@ class _RideRecordingScreenState extends State<RideRecordingScreen> {
                         ? const Color(0xFFE65100).withValues(alpha: 0.38)
                         : AppColors.accent.withValues(alpha: 0.28),
                   ),
+                  if (_selectedRoute != null && _onRoute != null) ...[
+                    const SizedBox(width: 8),
+                    _Chip(
+                      label: _onRoute!
+                          ? 'ON ROUTE'
+                          : 'OFF ROUTE · ${_offRouteMeters!.round()} m',
+                      color: _onRoute!
+                          ? AppColors.success.withValues(alpha: 0.28)
+                          : const Color(0xFFE65100).withValues(alpha: 0.38),
+                    ),
+                  ],
                   const Spacer(),
                   _GpsPill(
                     accuracyM: _accuracyM,
